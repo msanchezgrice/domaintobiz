@@ -390,7 +390,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         sessionId = urlParams.get('session');
         
-        if (!sessionId) {
+        console.group('🔧 Agent Dashboard Initialization');
+        console.log('🔗 Full URL:', window.location.href);
+        console.log('📝 URL Params:', Object.fromEntries(urlParams.entries()));
+        console.log('🆔 Session ID:', sessionId);
+        console.groupEnd();
+        
+        if (!sessionId || sessionId === 'undefined') {
+            console.error('❌ No valid session ID provided');
             alert('No session ID provided. Please start from the main page.');
             window.location.href = '/';
         }
@@ -403,30 +410,47 @@
             connectionStatus.textContent = 'Connecting...';
             connectionStatus.className = 'connection-status';
             
+            console.group('📡 Progress Connection Setup');
+            console.log('🔗 Progress URL:', `/api/progress/${sessionId}`);
+            
             if (eventSource) {
+                console.log('🔄 Closing existing EventSource');
                 eventSource.close();
             }
             
             eventSource = new EventSource(`/api/progress/${sessionId}`);
             
             eventSource.onopen = function() {
+                console.log('✅ SSE Connection opened successfully');
                 connectionStatus.textContent = 'Connected';
                 connectionStatus.className = 'connection-status connected';
             };
             
             eventSource.onmessage = function(event) {
-                const progress = JSON.parse(event.data);
-                updateDashboard(progress);
+                console.log('📨 Progress message received:', event.data);
+                try {
+                    const progress = JSON.parse(event.data);
+                    console.log('📊 Parsed progress data:', progress);
+                    updateDashboard(progress);
+                } catch (error) {
+                    console.error('❌ Failed to parse progress data:', error);
+                }
             };
             
             eventSource.onerror = function(error) {
-                console.error('SSE connection error:', error);
+                console.error('❌ SSE connection error:', error);
+                console.log('🔍 EventSource readyState:', eventSource.readyState);
                 connectionStatus.textContent = 'Disconnected';
                 connectionStatus.className = 'connection-status disconnected';
                 
                 // Attempt to reconnect after 3 seconds
-                setTimeout(connectToProgress, 3000);
+                setTimeout(() => {
+                    console.log('🔄 Retrying connection...');
+                    connectToProgress();
+                }, 3000);
             };
+            
+            console.groupEnd();
         }
         
         function updateDashboard(progress) {

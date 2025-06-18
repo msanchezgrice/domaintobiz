@@ -34,19 +34,94 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log(`Analyzing ${domains.length} domains:`, domains);
+    console.log(`🔍 Analyzing ${domains.length} domains:`, domains);
 
-    // Simple analysis without complex imports for now
+    // Proper domain analysis implementation
+    const analysisResults = [];
+    
+    for (const domain of domains) {
+      console.log(`📊 Analyzing domain: ${domain}`);
+      
+      try {
+        // Basic domain validation
+        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+        const isValidDomain = domainRegex.test(domain);
+        
+        // Simple website check
+        let hasWebsite = false;
+        let statusCode = null;
+        let title = '';
+        
+        try {
+          console.log(`🌐 Checking website for ${domain}`);
+          const response = await fetch(`https://${domain}`, {
+            method: 'HEAD',
+            headers: { 'User-Agent': 'DomainAnalyzer/1.0' },
+            signal: AbortSignal.timeout(5000)
+          });
+          hasWebsite = response.ok;
+          statusCode = response.status;
+          console.log(`✅ Website check for ${domain}: ${statusCode}`);
+        } catch (error) {
+          console.log(`❌ Website check failed for ${domain}:`, error.message);
+        }
+        
+        // Calculate domain score based on multiple factors
+        let score = 0;
+        if (isValidDomain) score += 30;
+        if (!hasWebsite) score += 40; // Available domain is good
+        if (domain.length <= 12) score += 20; // Shorter is better
+        if (!domain.includes('-')) score += 10; // No hyphens is better
+        
+        const domainAnalysis = {
+          domain,
+          score,
+          isValid: isValidDomain,
+          hasWebsite,
+          statusCode,
+          title,
+          metrics: {
+            length: domain.length,
+            hasHyphens: domain.includes('-'),
+            extension: domain.split('.').pop(),
+            availability: !hasWebsite ? 'likely available' : 'taken'
+          },
+          timestamp: new Date().toISOString()
+        };
+        
+        analysisResults.push(domainAnalysis);
+        console.log(`✅ Analysis complete for ${domain}:`, { score, isValid: isValidDomain, hasWebsite });
+        
+      } catch (error) {
+        console.error(`❌ Error analyzing ${domain}:`, error);
+        analysisResults.push({
+          domain,
+          score: 0,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+    
+    // Find best domain
+    const bestDomain = analysisResults
+      .filter(d => !d.error)
+      .sort((a, b) => b.score - a.score)[0];
+    
     const analysis = {
-      domains: domains.map(domain => ({
-        domain,
-        score: Math.random() * 100,
-        available: Math.random() > 0.5,
-        analysis: `Basic analysis for ${domain}`
-      })),
-      bestDomain: domains[0],
+      domains: analysisResults,
+      bestDomain: bestDomain?.domain || domains[0],
+      bestDomainData: bestDomain,
+      summary: {
+        totalDomains: domains.length,
+        validDomains: analysisResults.filter(d => d.isValid).length,
+        availableDomains: analysisResults.filter(d => !d.hasWebsite).length,
+        bestScore: bestDomain?.score || 0
+      },
       timestamp: new Date().toISOString()
     };
+    
+    console.log(`🎯 Analysis complete. Best domain: ${analysis.bestDomain} (score: ${bestDomain?.score || 0})`);;
 
     // Store in database
     const { data: savedAnalysis, error: dbError } = await supabase

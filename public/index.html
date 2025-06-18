@@ -618,18 +618,28 @@
                     body: JSON.stringify({ domains, trackProgress: true })
                 });
                 
-                console.log('Response status:', analyzeResponse.status);
+                console.log('🔄 Response status:', analyzeResponse.status);
+                
+                if (!analyzeResponse.ok) {
+                    const errorText = await analyzeResponse.text();
+                    console.error('❌ API Error Response:', errorText);
+                    throw new Error(`API Error ${analyzeResponse.status}: ${errorText}`);
+                }
+                
                 const initialData = await analyzeResponse.json();
-                console.log('Initial response data:', initialData);
+                console.log('✅ Initial response data:', initialData);
                 console.groupEnd();
                 
-                if (initialData.sessionId) {
+                // Generate execution ID for progress tracking
+                const executionId = initialData.id || `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.log('🆔 Execution ID:', executionId);
+                
+                if (executionId && executionId !== 'undefined') {
                     console.group('📡 Real-time Progress Tracking');
-                    console.log('Session ID:', initialData.sessionId);
-                    console.log('Progress URL:', `/api/analysis-progress/${initialData.sessionId}`);
+                    console.log('🔗 Progress URL:', `/api/progress/${executionId}`);
                     
                     // Start listening to real-time updates
-                    const analysisEventSource = new EventSource(`/api/analysis-progress/${initialData.sessionId}`);
+                    const analysisEventSource = new EventSource(`/api/progress/${executionId}`);
                     
                     analysisEventSource.onmessage = function(event) {
                         console.log('📨 Progress update received');

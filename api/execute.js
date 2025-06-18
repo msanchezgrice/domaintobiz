@@ -68,6 +68,7 @@ export default async function handler(req, res) {
       success: true,
       message: 'Execution completed',
       executionId,
+      sessionId: executionId, // Same as executionId for compatibility
       data: result,
       id: savedWebsite?.id,
       timestamp: new Date().toISOString()
