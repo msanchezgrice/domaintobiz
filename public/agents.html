@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Dashboard - Domain Analyzer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
+            color: #cccccc;
+            line-height: 1.6;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            height: 100vh;
+        }
+        
+        .header {
+            grid-column: 1 / -1;
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        
+        .header h1 {
+            color: #5730ec;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            margin: 0;
+        }
+        
+        .execution-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-badge.running {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status-badge.completed {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .status-badge.error {
+            background: #f44336;
+            color: white;
+        }
+        
+        .agent-panel {
+            background: #1a1a2e;
+            border-radius: 12px;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .agent-header {
+            padding: 16px;
+            background: #16213e;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .agent-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .agent-icon.design { background: #9c27b0; }
+        .agent-icon.content { background: #2196f3; }
+        .agent-icon.development { background: #4caf50; }
+        .agent-icon.deployment { background: #ff9800; }
+        
+        .agent-info h3 {
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        
+        .agent-status {
+            font-size: 14px;
+            color: #888;
+        }
+        
+        .agent-status.waiting { color: #888; }
+        .agent-status.starting { color: #ff9800; }
+        .agent-status.running { color: #4caf50; }
+        .agent-status.completed { color: #2196f3; }
+        .agent-status.error { color: #f44336; }
+        
+        .agent-logs {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #0f0f23;
+        }
+        
+        .log-entry {
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            border-left: 4px solid #333;
+            font-size: 14px;
+        }
+        
+        .log-entry.info {
+            border-left-color: #2196f3;
+        }
+        
+        .log-entry.success {
+            border-left-color: #4caf50;
+        }
+        
+        .log-entry.error {
+            border-left-color: #f44336;
+        }
+        
+        .log-timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .log-message {
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+        
+        .log-context {
+            font-size: 12px;
+            color: #888;
+            background: #0f0f1a;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .progress-indicator {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #5730ec, #8b5cf6);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .thinking-panel {
+            grid-column: 1 / -1;
+            background: #1a1a2e;
+            border-radius: 12px;
+            border: 1px solid #333;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .thinking-panel h3 {
+            color: #5730ec;
+            margin-bottom: 16px;
+        }
+        
+        .thinking-item {
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #0f0f23;
+            border-radius: 8px;
+            border-left: 4px solid #5730ec;
+        }
+        
+        .auto-scroll {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .final-result {
+            grid-column: 1 / -1;
+            background: #1a2e1a;
+            border: 2px solid #4caf50;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .final-result h2 {
+            color: #4caf50;
+            margin-bottom: 10px;
+        }
+        
+        .website-link {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 16px;
+            font-weight: 600;
+        }
+        
+        .website-link:hover {
+            background: #45a049;
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .connection-status.connected {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">Connecting...</div>
+    
+    <div class="dashboard">
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <h1>AI Agent Dashboard</h1>
+                    <p>Real-time monitoring of AI agents building your website</p>
+                </div>
+                <nav style="display: flex; gap: 12px;">
+                    <a href="/" style="padding: 10px 20px; background: #252525; color: #e0e0e0; text-decoration: none; border-radius: 6px; font-weight: 600; border: 1px solid #333;">Home</a>
+                    <a href="/app" style="padding: 10px 20px; background: #252525; color: #e0e0e0; text-decoration: none; border-radius: 6px; font-weight: 600; border: 1px solid #333;">Analyzer</a>
+                    <a href="/projects.html" style="padding: 10px 20px; background: #252525; color: #e0e0e0; text-decoration: none; border-radius: 6px; font-weight: 600; border: 1px solid #333;">Projects</a>
+                    <a href="/agents.html" style="padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Agent Monitor</a>
+                </nav>
+            </div>
+            <div class="execution-info">
+                <span id="domainInfo">Domain: Loading...</span>
+                <div class="status-badge" id="overallStatus">Initializing</div>
+                <span id="progressInfo">Step 0 of 4</span>
+            </div>
+        </div>
+        
+        <!-- Design Agent Panel -->
+        <div class="agent-panel" id="designPanel">
+            <div class="agent-header">
+                <div class="agent-icon design">D</div>
+                <div class="agent-info">
+                    <h3>Design Agent</h3>
+                    <div class="agent-status waiting" id="designStatus">Waiting</div>
+                </div>
+            </div>
+            <div class="progress-indicator">
+                <div class="progress-bar" id="designProgress"></div>
+            </div>
+            <div class="agent-logs" id="designLogs">
+                <div class="log-entry info">
+                    <div class="log-message">Design Agent initialized</div>
+                    <div class="log-context">Ready to generate design systems, color palettes, and wireframes</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content Agent Panel -->
+        <div class="agent-panel" id="contentPanel">
+            <div class="agent-header">
+                <div class="agent-icon content">C</div>
+                <div class="agent-info">
+                    <h3>Content Agent</h3>
+                    <div class="agent-status waiting" id="contentStatus">Waiting</div>
+                </div>
+            </div>
+            <div class="progress-indicator">
+                <div class="progress-bar" id="contentProgress"></div>
+            </div>
+            <div class="agent-logs" id="contentLogs">
+                <div class="log-entry info">
+                    <div class="log-message">Content Agent initialized</div>
+                    <div class="log-context">Ready to generate copy, SEO content, and forms</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Development Agent Panel -->
+        <div class="agent-panel" id="developmentPanel">
+            <div class="agent-header">
+                <div class="agent-icon development">V</div>
+                <div class="agent-info">
+                    <h3>Development Agent</h3>
+                    <div class="agent-status waiting" id="developmentStatus">Waiting</div>
+                </div>
+            </div>
+            <div class="progress-indicator">
+                <div class="progress-bar" id="developmentProgress"></div>
+            </div>
+            <div class="agent-logs" id="developmentLogs">
+                <div class="log-entry info">
+                    <div class="log-message">Development Agent initialized</div>
+                    <div class="log-context">Ready to build HTML, CSS, and JavaScript files</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Deployment Agent Panel -->
+        <div class="agent-panel" id="deploymentPanel">
+            <div class="agent-header">
+                <div class="agent-icon deployment">S</div>
+                <div class="agent-info">
+                    <h3>Deployment Agent</h3>
+                    <div class="agent-status waiting" id="deploymentStatus">Waiting</div>
+                </div>
+            </div>
+            <div class="progress-indicator">
+                <div class="progress-bar" id="deploymentProgress"></div>
+            </div>
+            <div class="agent-logs" id="deploymentLogs">
+                <div class="log-entry info">
+                    <div class="log-message">Deployment Agent initialized</div>
+                    <div class="log-context">Ready to deploy website to hosting platform</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Final Result -->
+        <div class="final-result" id="finalResult">
+            <h2>🎉 Website Created Successfully!</h2>
+            <p id="resultMessage">Your AI-generated business website is ready!</p>
+            <a href="#" id="websiteLink" class="website-link" target="_blank">Visit Your Website</a>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let sessionId = null;
+        
+        // Get session ID from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        sessionId = urlParams.get('session');
+        
+        if (!sessionId) {
+            alert('No session ID provided. Please start from the main page.');
+            window.location.href = '/';
+        }
+        
+        // Initialize connection
+        connectToProgress();
+        
+        function connectToProgress() {
+            const connectionStatus = document.getElementById('connectionStatus');
+            connectionStatus.textContent = 'Connecting...';
+            connectionStatus.className = 'connection-status';
+            
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            eventSource = new EventSource(`/api/progress/${sessionId}`);
+            
+            eventSource.onopen = function() {
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.className = 'connection-status connected';
+            };
+            
+            eventSource.onmessage = function(event) {
+                const progress = JSON.parse(event.data);
+                updateDashboard(progress);
+            };
+            
+            eventSource.onerror = function(error) {
+                console.error('SSE connection error:', error);
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'connection-status disconnected';
+                
+                // Attempt to reconnect after 3 seconds
+                setTimeout(connectToProgress, 3000);
+            };
+        }
+        
+        function updateDashboard(progress) {
+            // Update header info
+            if (progress.domain) {
+                document.getElementById('domainInfo').textContent = `Domain: ${progress.domain}`;
+            }
+            
+            document.getElementById('overallStatus').textContent = progress.status || 'Running';
+            document.getElementById('overallStatus').className = `status-badge ${progress.status || 'running'}`;
+            
+            document.getElementById('progressInfo').textContent = 
+                `Step ${progress.completedSteps || 0} of ${progress.totalSteps || 4}`;
+            
+            // Update agent statuses
+            if (progress.agents) {
+                Object.entries(progress.agents).forEach(([agentName, agentData]) => {
+                    updateAgentStatus(agentName, agentData);
+                });
+            }
+            
+            // Update agent logs
+            if (progress.agentLogs) {
+                Object.entries(progress.agentLogs).forEach(([agentName, logs]) => {
+                    updateAgentLogs(agentName, logs);
+                });
+            }
+            
+            // Handle completion
+            if (progress.status === 'completed' && progress.result) {
+                showFinalResult(progress.result);
+            }
+        }
+        
+        function updateAgentStatus(agentName, agentData) {
+            const statusElement = document.getElementById(`${agentName}Status`);
+            const progressElement = document.getElementById(`${agentName}Progress`);
+            
+            if (statusElement) {
+                statusElement.textContent = agentData.message || agentData.status;
+                statusElement.className = `agent-status ${agentData.status}`;
+            }
+            
+            if (progressElement) {
+                const progressPercent = getProgressPercent(agentData.status);
+                progressElement.style.width = `${progressPercent}%`;
+            }
+        }
+        
+        function getProgressPercent(status) {
+            switch (status) {
+                case 'waiting': return 0;
+                case 'starting': return 10;
+                case 'running': return 50;
+                case 'completed': return 100;
+                case 'error': return 100;
+                default: return 0;
+            }
+        }
+        
+        function updateAgentLogs(agentName, logs) {
+            const logsContainer = document.getElementById(`${agentName}Logs`);
+            if (!logsContainer) return;
+            
+            // Clear existing logs except the initial one
+            const existingLogs = logsContainer.querySelectorAll('.log-entry');
+            existingLogs.forEach((log, index) => {
+                if (index > 0) log.remove(); // Keep first initialization log
+            });
+            
+            // Add new logs
+            logs.forEach(logEntry => {
+                const logElement = createLogElement(logEntry);
+                logsContainer.appendChild(logElement);
+            });
+            
+            // Auto-scroll to bottom
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        function createLogElement(logEntry) {
+            const logDiv = document.createElement('div');
+            logDiv.className = 'log-entry info auto-scroll';
+            
+            const timestamp = new Date(logEntry.timestamp).toLocaleTimeString();
+            
+            logDiv.innerHTML = `
+                <div class="log-timestamp">${timestamp}</div>
+                <div class="log-message">${logEntry.message}</div>
+                ${logEntry.context && Object.keys(logEntry.context).length > 0 ? 
+                    `<div class="log-context">${formatContext(logEntry.context)}</div>` : ''}
+            `;
+            
+            return logDiv;
+        }
+        
+        function formatContext(context) {
+            if (typeof context === 'string') return context;
+            
+            return Object.entries(context)
+                .map(([key, value]) => {
+                    if (Array.isArray(value)) {
+                        return `${key}: [${value.join(', ')}]`;
+                    }
+                    return `${key}: ${value}`;
+                })
+                .join('<br>');
+        }
+        
+        function showFinalResult(result) {
+            const finalResult = document.getElementById('finalResult');
+            const resultMessage = document.getElementById('resultMessage');
+            const websiteLink = document.getElementById('websiteLink');
+            
+            resultMessage.textContent = `Successfully created ${result.domain}!`;
+            websiteLink.href = result.websiteUrl;
+            websiteLink.textContent = `Visit ${result.domain}`;
+            
+            finalResult.style.display = 'block';
+            
+            // Update all agents to completed
+            ['design', 'content', 'development', 'deployment'].forEach(agent => {
+                updateAgentStatus(agent, { status: 'completed', message: 'Completed successfully' });
+            });
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>
