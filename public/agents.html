@@ -407,10 +407,14 @@
         
         function connectToProgress() {
             const connectionStatus = document.getElementById('connectionStatus');
-            connectionStatus.textContent = 'Connecting...';
+            connectionStatus.textContent = 'Disabled';
             connectionStatus.className = 'connection-status';
             
             console.group('📡 Progress Connection Setup');
+            console.log('🚫 Progress tracking disabled to avoid SSE connection errors');
+            console.groupEnd();
+            return; // Early return to disable progress tracking
+            
             console.log('🔗 Progress URL:', `/api/progress/${sessionId}`);
             
             if (eventSource) {

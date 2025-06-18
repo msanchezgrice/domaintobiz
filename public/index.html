@@ -936,6 +936,9 @@
         function startProgressTracking(sessionId) {
             console.group('📊 Progress Tracking Setup');
             console.log('Session ID:', sessionId);
+            console.log('🚫 Progress tracking disabled to avoid SSE errors');
+            console.groupEnd();
+            return; // Early return to disable progress tracking
             
             if (eventSource) {
                 console.log('Closing existing EventSource');
