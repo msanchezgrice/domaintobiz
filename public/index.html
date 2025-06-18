@@ -628,6 +628,35 @@
                 
                 const initialData = await analyzeResponse.json();
                 console.log('✅ Initial response data:', initialData);
+                console.log('📊 Analysis data structure:', {
+                    success: initialData.success,
+                    hasData: !!initialData.data,
+                    dataKeys: initialData.data ? Object.keys(initialData.data) : null,
+                    bestDomain: initialData.data?.bestDomain,
+                    domainsCount: initialData.data?.domains?.length,
+                    id: initialData.id
+                });
+                
+                // Check if analysis completed successfully
+                if (initialData.success && initialData.data) {
+                    console.log('🎯 Analysis completed successfully - calling handleAnalysisComplete directly');
+                    
+                    // Fix data structure for handleAnalysisComplete
+                    const analysisData = {
+                        data: {
+                            ...initialData.data,
+                            analyzed: initialData.data.domains // Fix property name mismatch
+                        }
+                    };
+                    
+                    console.log('📊 Fixed analysis data:', analysisData);
+                    
+                    // Call completion handler directly
+                    handleAnalysisComplete(analysisData);
+                    
+                    console.log('✅ Analysis results should now be displayed');
+                }
+                
                 console.groupEnd();
                 
                 // Generate execution ID for progress tracking
