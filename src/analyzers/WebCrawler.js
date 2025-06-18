@@ -1,19 +1,9 @@
-import puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
 import { logger } from '../utils/logger.js';
 
 export class WebCrawler {
   constructor() {
-    this.browser = null;
-  }
-
-  async initialize() {
-    if (!this.browser) {
-      this.browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-    }
+    // Simple HTTP-based crawler for serverless environments
   }
 
   async crawl(domain, tracker = null) {
@@ -21,36 +11,36 @@ export class WebCrawler {
     
     if (tracker) {
       tracker.addThinking(`Web crawling ${domain}`, {
-        step: 'Launching browser and checking for website',
-        timeout: '30 seconds',
-        checks: ['HTTP response', 'content analysis', 'SEO metrics', 'technology detection']
+        step: 'Checking for website with HTTP request',
+        timeout: '10 seconds',
+        checks: ['HTTP response', 'content analysis', 'SEO metrics']
       });
     }
     
-    let page = null;
     try {
-      logger.info(`Initializing browser for ${domain}`);
-      await this.initialize();
-      
-      page = await this.browser.newPage();
-      await page.setDefaultTimeout(15000);
-      
       const url = domain.startsWith('http') ? domain : `https://${domain}`;
-      logger.info(`Navigating to ${url}`);
+      logger.info(`Fetching ${url}`);
       
-      const response = await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 15000
+      // Use fetch for simple HTTP requests
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; DomainAnalyzer/1.0)'
+        },
+        signal: AbortSignal.timeout(10000)
       }).catch(async (err) => {
         logger.warn(`HTTPS failed for ${domain}, trying HTTP:`, err.message);
         const httpUrl = `http://${domain}`;
-        return await page.goto(httpUrl, {
-          waitUntil: 'domcontentloaded',
-          timeout: 15000
+        return await fetch(httpUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; DomainAnalyzer/1.0)'
+          },
+          signal: AbortSignal.timeout(10000)
         }).catch(() => null);
       });
 
-      if (!response) {
+      if (!response || !response.ok) {
         if (tracker) {
           tracker.addThinking(`No website found for ${domain}`, {
             result: 'Domain appears to be available or unresponsive',
@@ -60,12 +50,12 @@ export class WebCrawler {
         return { hasWebsite: false, domain };
       }
 
-      const content = await page.content();
+      const content = await response.text();
       const $ = cheerio.load(content);
       
       if (tracker) {
         tracker.addThinking(`Analyzing website content for ${domain}`, {
-          statusCode: response.status(),
+          statusCode: response.status,
           title: $('title').text() || 'No title',
           hasDescription: !!$('meta[name="description"]').attr('content'),
           contentLength: content.length
@@ -74,18 +64,17 @@ export class WebCrawler {
       
       const crawlData = {
         hasWebsite: true,
-        statusCode: response.status(),
+        statusCode: response.status,
         title: $('title').text() || '',
         description: $('meta[name="description"]').attr('content') || '',
-        headers: await response.headers(),
-        technologies: await this.detectTechnologies(page, $),
+        headers: Object.fromEntries(response.headers.entries()),
+        technologies: this.detectTechnologies($),
         content: {
           headings: this.extractHeadings($),
           links: this.extractLinks($, url),
           images: this.extractImages($),
           forms: this.extractForms($)
         },
-        performance: await this.getPerformanceMetrics(page),
         seo: this.analyzeSEO($)
       };
 
@@ -94,12 +83,10 @@ export class WebCrawler {
           technologies: crawlData.technologies,
           seoScore: Object.values(crawlData.seo).filter(Boolean).length,
           formsFound: crawlData.content.forms.length,
-          internalLinks: crawlData.content.links.internal.length,
-          loadTime: crawlData.performance.loadTime
+          internalLinks: crawlData.content.links.internal.length
         });
       }
 
-      await page.close();
       return crawlData;
       
     } catch (error) {
@@ -112,7 +99,7 @@ export class WebCrawler {
     }
   }
 
-  async detectTechnologies(page, $) {
+  detectTechnologies($) {
     const technologies = [];
     
     const scripts = $('script[src]').map((i, el) => $(el).attr('src')).get();
@@ -186,20 +173,6 @@ export class WebCrawler {
     }).get();
   }
 
-  async getPerformanceMetrics(page) {
-    const metrics = await page.metrics();
-    const timing = await page.evaluate(() => {
-      const perf = window.performance.timing;
-      return {
-        loadTime: perf.loadEventEnd - perf.navigationStart,
-        domContentLoaded: perf.domContentLoadedEventEnd - perf.navigationStart,
-        firstContentfulPaint: performance.getEntriesByType('paint')
-          .find(entry => entry.name === 'first-contentful-paint')?.startTime || 0
-      };
-    });
-
-    return { ...metrics, ...timing };
-  }
 
   analyzeSEO($) {
     return {
@@ -217,9 +190,6 @@ export class WebCrawler {
   }
 
   async close() {
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
-    }
+    // No cleanup needed for fetch-based crawler
   }
 }
