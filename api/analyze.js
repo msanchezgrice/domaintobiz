@@ -134,7 +134,15 @@ export default async function handler(req, res) {
       .single();
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      console.error('❌ Database error details:', {
+        error: dbError,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        code: dbError.code
+      });
+    } else {
+      console.log('✅ Successfully saved to database with ID:', savedAnalysis?.id);
     }
 
     console.log('Analysis completed successfully');
