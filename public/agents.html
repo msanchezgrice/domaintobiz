@@ -389,17 +389,30 @@
         // Get session ID from URL params
         const urlParams = new URLSearchParams(window.location.search);
         sessionId = urlParams.get('session');
+        const domainParam = urlParams.get('domain');
         
         console.group('🔧 Agent Dashboard Initialization');
         console.log('🔗 Full URL:', window.location.href);
         console.log('📝 URL Params:', Object.fromEntries(urlParams.entries()));
         console.log('🆔 Session ID:', sessionId);
+        console.log('🌐 Domain from URL:', domainParam);
         console.groupEnd();
+        
+        // Show domain immediately if provided
+        if (domainParam) {
+            document.getElementById('domainInfo').textContent = `Domain: ${domainParam}`;
+            console.log('✅ Domain displayed immediately:', domainParam);
+        }
         
         if (!sessionId || sessionId === 'undefined') {
             console.error('❌ No valid session ID provided');
-            alert('No session ID provided. Please start from the main page.');
-            window.location.href = '/';
+            // Don't redirect if we have domain info - allow viewing even without session
+            if (!domainParam) {
+                alert('No session ID provided. Please start from the main page.');
+                window.location.href = '/';
+            } else {
+                console.log('⚠️ No session ID but domain available, continuing...');
+            }
         }
         
         // Initialize connection

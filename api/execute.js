@@ -20,13 +20,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { domains } = req.body;
+    const { domains, bestDomainData } = req.body;
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return res.status(400).json({ 
         error: 'Please provide an array of domains' 
       });
     }
+    
+    console.log('📥 Received execute request:', { domains, bestDomainData });
 
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -87,6 +89,7 @@ export default async function handler(req, res) {
       message: 'Execution completed',
       executionId,
       sessionId: executionId, // Same as executionId for compatibility
+      domain: targetDomain, // Include domain for agent dashboard
       data: result,
       id: savedWebsite?.id,
       timestamp: new Date().toISOString()

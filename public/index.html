@@ -656,6 +656,16 @@
                     try {
                         handleAnalysisComplete(analysisData);
                         console.log('✅ handleAnalysisComplete called successfully');
+                    
+                    // Force show results section
+                    const resultsSection = document.getElementById('results');
+                    if (resultsSection) {
+                        resultsSection.style.display = 'block';
+                        console.log('🎯 Forced results section to show');
+                    } else {
+                        console.error('❌ Results section not found!');
+                    }
+                    
                     } catch (error) {
                         console.error('❌ Error in handleAnalysisComplete:', error);
                         console.error('Stack:', error.stack);
@@ -820,7 +830,10 @@
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({ domains: [analysisData.data.bestDomain.domain] })
+                            body: JSON.stringify({ 
+                                domains: [analysisData.data.bestDomain.domain],
+                                bestDomainData: analysisData.data.bestDomain 
+                            })
                         });
                         
                         console.log('Execute response status:', executeResponse.status);
@@ -838,7 +851,7 @@
                                 const agentViewer = document.getElementById('agentViewer');
                                 const agentFrame = document.getElementById('agentFrame');
                                 
-                                const agentUrl = `/agents.html?session=${executeData.sessionId}`;
+                                const agentUrl = `/agents.html?session=${executeData.sessionId}&domain=${encodeURIComponent(executeData.domain || analysisData.data.bestDomain.domain)}`;
                                 console.log('Loading agent dashboard:', agentUrl);
                                 agentFrame.src = agentUrl;
                                 agentViewer.style.display = 'block';
@@ -876,17 +889,31 @@
             resultsList.innerHTML = '';
             
             // Check for domains in multiple possible locations
-            const domains = data.rankings || data.analyzed || data.domains || [];
+            const domains = data.domains || data.analyzed || data.rankings || [];
             console.log('📋 Found domains for display:', domains);
             
             if (!domains || domains.length === 0) {
                 console.log('❌ No domains found to display');
-                resultsList.innerHTML = '<p>No domains could be analyzed.</p>';
+                console.log('🔍 Available data keys:', Object.keys(data));
+                console.log('🔍 Raw data:', data);
+                
+                // Emergency fallback - show something
+                resultsList.innerHTML = `
+                    <div class="result-item">
+                        <h4>Analysis Results Available</h4>
+                        <p>Data structure: ${JSON.stringify(Object.keys(data))}</p>
+                        <p>Best domain: ${data.bestDomain || 'Not found'}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
                 return;
             }
             
             console.log(`🎯 Displaying ${domains.length} domain results`);
+            console.log('📋 Raw domains data for UI:', domains);
+            
             domains.forEach((domain, index) => {
+                console.log(`🔍 Processing domain ${index + 1}:`, domain);
                 const resultItem = document.createElement('div');
                 resultItem.className = 'result-item';
                 
