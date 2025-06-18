@@ -21,6 +21,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Check if environment variables are set
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      return res.status(500).json({ 
+        error: 'Server configuration error: Missing database credentials' 
+      });
+    }
     const { domains, trackProgress } = req.body;
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
