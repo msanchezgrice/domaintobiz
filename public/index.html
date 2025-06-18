@@ -640,6 +640,7 @@
                 // Check if analysis completed successfully
                 if (initialData.success && initialData.data) {
                     console.log('🎯 Analysis completed successfully - calling handleAnalysisComplete directly');
+                    console.log('🔍 Raw initial data:', JSON.stringify(initialData, null, 2));
                     
                     // Fix data structure for handleAnalysisComplete
                     const analysisData = {
@@ -649,12 +650,24 @@
                         }
                     };
                     
-                    console.log('📊 Fixed analysis data:', analysisData);
+                    console.log('📊 Fixed analysis data:', JSON.stringify(analysisData, null, 2));
                     
                     // Call completion handler directly
-                    handleAnalysisComplete(analysisData);
+                    try {
+                        handleAnalysisComplete(analysisData);
+                        console.log('✅ handleAnalysisComplete called successfully');
+                    } catch (error) {
+                        console.error('❌ Error in handleAnalysisComplete:', error);
+                        console.error('Stack:', error.stack);
+                    }
                     
                     console.log('✅ Analysis results should now be displayed');
+                } else {
+                    console.error('❌ Analysis failed or no data:', {
+                        success: initialData.success,
+                        hasData: !!initialData.data,
+                        initialData
+                    });
                 }
                 
                 console.groupEnd();
@@ -761,21 +774,30 @@
         
         function handleAnalysisComplete(analysisData) {
             console.group('🎯 Analysis Complete Handler');
-            console.log('Analysis data received:', analysisData);
+            console.log('📥 Analysis data received:', JSON.stringify(analysisData, null, 2));
             
             if (!analysisData.data) {
                 console.error('❌ No analysis data in response');
+                console.error('Full analysisData object:', analysisData);
                 throw new Error('No analysis data received');
             }
             
-            console.log('Analyzed domains:', analysisData.data.analyzed?.length || 0);
-            console.log('Best domain:', analysisData.data.bestDomain);
+            console.log('📊 Analyzed domains count:', analysisData.data.analyzed?.length || 0);
+            console.log('🏆 Best domain:', analysisData.data.bestDomain);
+            console.log('📋 All analyzed domains:', analysisData.data.analyzed);
             
             // Add completion log
             addAnalysisLog('success', 'Analysis Complete', `Successfully analyzed ${analysisData.data.analyzed?.length || 0} domains`);
             
             // Display results
-            displayResults(analysisData.data);
+            console.log('🎨 Calling displayResults...');
+            try {
+                displayResults(analysisData.data);
+                console.log('✅ displayResults completed successfully');
+            } catch (error) {
+                console.error('❌ Error in displayResults:', error);
+                console.error('Stack:', error.stack);
+            }
             
             // Auto-execute full pipeline for best domain
             if (analysisData.data.bestDomain && !analysisData.data.bestDomain.error) {
@@ -845,15 +867,23 @@
         }
         
         function displayResults(data) {
+            console.log('🎨 displayResults called with data:', JSON.stringify(data, null, 2));
+            
             results.style.display = 'block';
             resultsList.innerHTML = '';
             
-            if (!data.rankings || data.rankings.length === 0) {
+            // Check for domains in multiple possible locations
+            const domains = data.rankings || data.analyzed || data.domains || [];
+            console.log('📋 Found domains for display:', domains);
+            
+            if (!domains || domains.length === 0) {
+                console.log('❌ No domains found to display');
                 resultsList.innerHTML = '<p>No domains could be analyzed.</p>';
                 return;
             }
             
-            data.rankings.forEach((domain, index) => {
+            console.log(`🎯 Displaying ${domains.length} domain results`);
+            domains.forEach((domain, index) => {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'result-item';
                 

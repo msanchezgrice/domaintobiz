@@ -119,18 +119,38 @@ Return ONLY a valid JSON object with this exact structure:
 
         console.log('📥 OpenAI response received');
         const responseText = completion.choices[0].message.content;
-        console.log('🔍 Raw OpenAI response:', responseText.substring(0, 200) + '...');
+        console.log('🔍 Full OpenAI response:');
+        console.log('='.repeat(80));
+        console.log(responseText);
+        console.log('='.repeat(80));
         
         // Parse JSON response
-        strategy = JSON.parse(responseText);
-        strategy.timestamp = new Date().toISOString();
-        
-        console.log('✅ Successfully parsed strategy from OpenAI');
-        console.log('📊 Strategy summary:', {
-          businessType: strategy.businessModel?.type,
-          features: strategy.mvpScope?.features?.length,
-          positioning: strategy.brandStrategy?.positioning?.substring(0, 50) + '...'
-        });
+        try {
+          strategy = JSON.parse(responseText);
+          strategy.timestamp = new Date().toISOString();
+          
+          console.log('✅ Successfully parsed strategy from OpenAI');
+          console.log('📊 Full parsed strategy:', JSON.stringify(strategy, null, 2));
+        } catch (parseError) {
+          console.error('❌ Failed to parse OpenAI response as JSON:', parseError);
+          console.log('🔄 Attempting to extract JSON from response...');
+          
+          // Try to extract JSON from response if wrapped in markdown
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              strategy = JSON.parse(jsonMatch[0]);
+              strategy.timestamp = new Date().toISOString();
+              console.log('✅ Successfully extracted and parsed JSON from response');
+              console.log('📊 Extracted strategy:', JSON.stringify(strategy, null, 2));
+            } catch (extractError) {
+              console.error('❌ Failed to parse extracted JSON:', extractError);
+              throw parseError;
+            }
+          } else {
+            throw parseError;
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Error generating strategy:', error);
