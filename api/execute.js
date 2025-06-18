@@ -31,6 +31,13 @@ export default async function handler(req, res) {
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     console.log(`Executing full pipeline for ${domains.length} domains [${executionId}]`);
+    
+    const targetDomain = domains[0];
+    if (!targetDomain) {
+      throw new Error('No domain provided for execution');
+    }
+    
+    console.log(`🎯 Target domain: ${targetDomain}`);
 
     // Simplified execution for now
     const result = {
@@ -38,31 +45,42 @@ export default async function handler(req, res) {
       domains,
       status: 'completed',
       result: {
-        domain: domains[0],
-        analysis: 'Basic analysis completed',
-        strategy: 'Strategy generated',
-        website: 'Website generated'
+        domain: targetDomain,
+        analysis: `Basic analysis completed for ${targetDomain}`,
+        strategy: `Strategy generated for ${targetDomain}`,
+        website: `Website generated for ${targetDomain}`
       },
       timestamp: new Date().toISOString()
     };
 
     // Store in database
+    console.log(`💾 Saving execution result to database for domain: ${targetDomain}`);
+    
     const { data: savedWebsite, error: dbError } = await supabase
       .from('generated_websites')
       .insert({
-        domain: result.result.domain,
+        domain: targetDomain,
         website_data: result,
-        deployment_url: `https://${result.result.domain}`,
+        deployment_url: `https://${targetDomain}`,
         status: 'completed'
       })
       .select()
       .single();
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      console.error('❌ Database error details:', {
+        error: dbError,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        code: dbError.code,
+        domain: targetDomain
+      });
+    } else {
+      console.log('✅ Successfully saved execution to database with ID:', savedWebsite?.id);
     }
 
-    console.log(`Execution completed successfully for ${result.result.domain}`);
+    console.log(`🎉 Execution completed successfully for ${targetDomain}`);
 
     return res.status(200).json({
       success: true,

@@ -976,8 +976,8 @@
                 });
             }
             
-            // Add thinking items to log
-            const newThinking = progress.details.filter(d => d.type === 'thinking' || d.type === 'error');
+            // Add thinking items to log (safely handle missing details)
+            const newThinking = (progress.details || []).filter(d => d.type === 'thinking' || d.type === 'error');
             newThinking.forEach(thinking => {
                 if (!document.querySelector(`[data-timestamp="${thinking.timestamp}"]`)) {
                     addThinkingItem(thinking);
