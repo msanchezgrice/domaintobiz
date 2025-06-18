@@ -19,7 +19,8 @@
     "@anthropic-ai/sdk": "^0.24.0",
     "cheerio": "^1.0.0-rc.12",
     "whois": "^2.14.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@vercel/node": "^3.0.21",
