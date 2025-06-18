@@ -596,6 +596,17 @@
             
             try {
                 console.group('🌐 API Request');
+                console.log('Testing API connection first...');
+                
+                // Test API connection first
+                const testResponse = await fetch('/api/test');
+                const testData = await testResponse.json();
+                console.log('API Test Result:', testData);
+                
+                if (!testData.success) {
+                    throw new Error('API connection failed: ' + testData.message);
+                }
+                
                 console.log('Sending request to /api/analyze with:', { domains, trackProgress: true });
                 
                 // Request analysis with progress tracking
