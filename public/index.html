@@ -684,7 +684,10 @@
                     console.log('🔄 Fallback execution ID:', executionId);
                 }
                 
-                if (executionId && executionId !== 'undefined') {
+                // Temporarily disable progress tracking to avoid SSE spam
+                console.log('🔗 Progress tracking disabled - results should display immediately');
+                
+                if (false && executionId && executionId !== 'undefined') {
                     console.group('📡 Real-time Progress Tracking');
                     console.log('🔗 Progress URL:', `/api/progress/${executionId}`);
                     
