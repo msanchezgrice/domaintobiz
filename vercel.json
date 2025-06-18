@@ -1,47 +1,27 @@
 {
   "version": 2,
   "name": "domain-analyzer",
-  "builds": [
-    {
-      "src": "public/**/*",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/app",
-      "dest": "/public/index.html"
-    },
-    {
-      "src": "/agents.html",
-      "dest": "/public/agents.html"
-    },
-    {
-      "src": "/projects.html", 
-      "dest": "/public/projects.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/landing.html"
-    }
-  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 60
     }
   },
-  "env": {
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "OPENAI_API_KEY": "@openai-api-key",
-    "ANTHROPIC_API_KEY": "@anthropic-api-key"
-  }
+  "rewrites": [
+    {
+      "source": "/app",
+      "destination": "/public/index.html"
+    },
+    {
+      "source": "/agents.html",
+      "destination": "/public/agents.html"
+    },
+    {
+      "source": "/projects.html", 
+      "destination": "/public/projects.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/public/landing.html"
+    }
+  ]
 }
