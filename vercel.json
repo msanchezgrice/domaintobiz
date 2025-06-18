@@ -8,6 +8,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/progress/(.*)",
+      "destination": "/api/progress"
+    },
+    {
       "source": "/app",
       "destination": "/public/index.html"
     },

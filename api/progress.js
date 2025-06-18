@@ -16,12 +16,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { query } = req;
-    const executionId = query.executionId || query[0]; // Handle dynamic route
+    // Extract executionId from URL path
+    const urlPath = req.url;
+    const pathParts = urlPath.split('/');
+    const executionId = pathParts[pathParts.length - 1] || req.query.executionId;
 
-    if (!executionId || executionId === 'undefined') {
+    console.log('Progress endpoint called:', {
+      url: req.url,
+      pathParts,
+      executionId,
+      query: req.query
+    });
+
+    if (!executionId || executionId === 'undefined' || executionId === 'progress') {
       return res.status(400).json({ 
-        error: 'Missing execution ID' 
+        error: 'Missing execution ID',
+        url: req.url,
+        pathParts
       });
     }
 
