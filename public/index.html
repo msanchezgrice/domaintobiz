@@ -631,8 +631,16 @@
                 console.groupEnd();
                 
                 // Generate execution ID for progress tracking
-                const executionId = initialData.id || `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                console.log('🆔 Execution ID:', executionId);
+                let executionId = initialData.id || `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.log('🆔 Execution ID from response:', initialData.id);
+                console.log('🆔 Initial execution ID:', executionId);
+                
+                // Validate execution ID
+                if (!executionId || executionId === 'undefined' || executionId === 'null') {
+                    console.error('❌ Invalid execution ID, generating new one');
+                    executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    console.log('🔄 Fallback execution ID:', executionId);
+                }
                 
                 if (executionId && executionId !== 'undefined') {
                     console.group('📡 Real-time Progress Tracking');

@@ -121,28 +121,40 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     };
     
-    console.log(`🎯 Analysis complete. Best domain: ${analysis.bestDomain} (score: ${bestDomain?.score || 0})`);;
+    console.log(`🎯 Analysis complete. Best domain: ${analysis.bestDomain} (score: ${bestDomain?.score || 0})`);
 
-    // Store in database
-    const { data: savedAnalysis, error: dbError } = await supabase
-      .from('domain_analyses')
-      .insert({
-        domains,
-        analysis_result: analysis
-      })
-      .select()
-      .single();
+    // Generate a unique ID for this analysis
+    const analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Try to store in database (but don't fail if it doesn't work)
+    let savedAnalysis = null;
+    try {
+      const { data, error: dbError } = await supabase
+        .from('domain_analyses')
+        .insert({
+          domains,
+          analysis_result: analysis,
+          best_domain: analysis.bestDomain
+        })
+        .select()
+        .single();
 
-    if (dbError) {
-      console.error('❌ Database error details:', {
-        error: dbError,
-        message: dbError.message,
-        details: dbError.details,
-        hint: dbError.hint,
-        code: dbError.code
-      });
-    } else {
-      console.log('✅ Successfully saved to database with ID:', savedAnalysis?.id);
+      if (dbError) {
+        console.error('❌ Database error details:', {
+          error: dbError,
+          message: dbError.message,
+          details: dbError.details,
+          hint: dbError.hint,
+          code: dbError.code
+        });
+        console.log('📝 Continuing without database - using generated ID:', analysisId);
+      } else {
+        savedAnalysis = data;
+        console.log('✅ Successfully saved to database with ID:', savedAnalysis?.id);
+      }
+    } catch (error) {
+      console.error('❌ Database connection failed:', error.message);
+      console.log('📝 Continuing without database - using generated ID:', analysisId);
     }
 
     console.log('Analysis completed successfully');
@@ -150,7 +162,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       data: analysis,
-      id: savedAnalysis?.id,
+      id: savedAnalysis?.id || analysisId,
       timestamp: new Date().toISOString()
     });
 
