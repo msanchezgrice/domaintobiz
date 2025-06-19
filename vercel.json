@@ -13,11 +13,11 @@
     },
     {
       "source": "/sites/([^/]+)/(.*)",
-      "destination": "/api/sites/$1?file=$2"
+      "destination": "/api/serve-site?slug=$1&file=$2"
     },
     {
       "source": "/sites/([^/]+)/?",
-      "destination": "/api/sites/$1"
+      "destination": "/api/serve-site?slug=$1"
     },
     {
       "source": "/app",
