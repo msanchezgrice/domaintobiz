@@ -20,7 +20,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { domains, bestDomainData } = req.body;
+    // Validate request body exists
+    if (!req.body) {
+      console.error('❌ No request body provided');
+      return res.status(400).json({ 
+        error: 'Request body is required' 
+      });
+    }
+
+    // Handle potential JSON parsing errors
+    let parsedBody;
+    try {
+      parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      return res.status(400).json({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      });
+    }
+
+    const { domains, bestDomainData } = parsedBody;
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return res.status(400).json({ 
@@ -96,10 +116,20 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Execution failed:', error);
+    console.error('❌ Execution failed:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      requestBody: req.body,
+      requestMethod: req.method,
+      requestUrl: req.url,
+      headers: req.headers
+    });
+    
     return res.status(500).json({ 
       error: 'Execution failed', 
       message: error.message,
+      type: error.name,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
