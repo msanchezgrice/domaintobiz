@@ -60,7 +60,6 @@ export default async function handler(req, res) {
       console.log('📊 No domain data provided, analyzing domain...');
       
       // Use origin from request for internal API calls
-      const origin = `https://${req.headers.host}`;
       console.log('🌐 Using origin for internal calls:', origin);
       
       const analyzeResponse = await fetch(`${origin}/api/analyze`, {
@@ -82,7 +81,6 @@ export default async function handler(req, res) {
     console.log('🤖 Generating business strategy...');
     
     // Use origin from request
-    const origin = `https://${req.headers.host}`;
     const strategyResponse = await fetch(`${origin}/api/strategy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
