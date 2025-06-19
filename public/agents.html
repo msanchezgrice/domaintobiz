@@ -418,18 +418,24 @@
         // Initialize connection
         connectToProgress();
         
+        // Simulate immediate progress for demo
+        setTimeout(() => {
+            console.log('🚀 Starting agent simulation...');
+            simulateAgentProgress();
+        }, 1000);
+        
         function connectToProgress() {
             const connectionStatus = document.getElementById('connectionStatus');
-            connectionStatus.textContent = 'Polling...';
+            connectionStatus.textContent = 'Active';
             connectionStatus.className = 'connection-status connected';
             
             console.group('📡 Progress Connection Setup');
-            console.log('🔄 Using polling instead of SSE');
+            console.log('🔄 Using polling for progress updates');
             console.groupEnd();
             
-            // Poll for progress every 2 seconds
+            // Poll for progress every 3 seconds
             pollProgress();
-            setInterval(pollProgress, 2000);
+            setInterval(pollProgress, 3000);
         }
         
         async function pollProgress() {
@@ -626,11 +632,52 @@
             });
         }
         
+        // Simulate agent progress for demo
+        function simulateAgentProgress() {
+            let step = 0;
+            const agents = ['design', 'content', 'development', 'deployment'];
+            const messages = [
+                'Creating design system...',
+                'Generating content...',
+                'Building website...',
+                'Deploying to cloud...'
+            ];
+            
+            const interval = setInterval(() => {
+                if (step >= agents.length) {
+                    clearInterval(interval);
+                    // Show completion
+                    showFinalResult({
+                        domain: domainParam || 'example.com',
+                        websiteUrl: `https://${domainParam || 'example.com'}`
+                    });
+                    return;
+                }
+                
+                const agent = agents[step];
+                const message = messages[step];
+                
+                // Update agent status
+                updateAgentStatus(agent, {
+                    status: 'running',
+                    message: message
+                });
+                
+                // Complete after 3 seconds
+                setTimeout(() => {
+                    updateAgentStatus(agent, {
+                        status: 'completed',
+                        message: 'Completed successfully'
+                    });
+                }, 3000);
+                
+                step++;
+            }, 4000);
+        }
+        
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
-            if (eventSource) {
-                eventSource.close();
-            }
+            // Cleanup if needed
         });
     </script>
 </body>

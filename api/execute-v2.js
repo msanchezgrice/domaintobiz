@@ -246,6 +246,27 @@ export default async function handler(req, res) {
     }
 
     console.log(`🎉 Full pipeline completed successfully for ${targetDomain}`);
+    
+    // Final progress update
+    await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'completed',
+        completedSteps: 4,
+        totalSteps: 4,
+        agents: {
+          design: { status: 'completed', message: 'Design completed' },
+          content: { status: 'completed', message: 'Content completed' },
+          development: { status: 'completed', message: 'Development completed' },
+          deployment: { status: 'completed', message: 'Deployment completed' }
+        },
+        result: {
+          domain: targetDomain,
+          websiteUrl: `https://${targetDomain}`
+        }
+      })
+    });
 
     return res.status(200).json({
       success: true,
