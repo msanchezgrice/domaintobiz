@@ -32,7 +32,11 @@
       "destination": "/public/projects.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/index.html",
+      "destination": "/public/index.html"
+    },
+    {
+      "source": "/",
       "destination": "/public/landing.html"
     }
   ]
