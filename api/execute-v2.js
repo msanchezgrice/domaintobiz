@@ -46,7 +46,8 @@ export default async function handler(req, res) {
     if (!domainAnalysis) {
       console.log('📊 No domain data provided, analyzing domain...');
       
-      const analyzeResponse = await fetch(`${process.env.VERCEL_URL || 'https://domaintobiz.vercel.app'}/api/analyze`, {
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://domaintobiz.vercel.app';
+      const analyzeResponse = await fetch(`${baseUrl}/api/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domains: [targetDomain] })
@@ -64,7 +65,8 @@ export default async function handler(req, res) {
     // Step 2: Generate business strategy
     console.log('🤖 Generating business strategy...');
     
-    const strategyResponse = await fetch(`${process.env.VERCEL_URL || 'https://domaintobiz.vercel.app'}/api/strategy`, {
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://domaintobiz.vercel.app';
+    const strategyResponse = await fetch(`${baseUrl}/api/strategy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
