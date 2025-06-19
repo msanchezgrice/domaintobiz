@@ -435,15 +435,29 @@
         async function pollProgress() {
             if (!sessionId || sessionId === 'undefined') return;
             
+            const connectionStatus = document.getElementById('connectionStatus');
+            
             try {
+                console.log('🔄 Polling progress for session:', sessionId);
                 const response = await fetch(`/api/progress-status?sessionId=${sessionId}`);
+                
                 if (response.ok) {
                     const progress = await response.json();
                     console.log('📡 Progress update:', progress);
+                    
+                    connectionStatus.textContent = 'Connected';
+                    connectionStatus.className = 'connection-status connected';
+                    
                     updateDashboard(progress);
+                } else {
+                    console.error('❌ Progress endpoint returned:', response.status);
+                    connectionStatus.textContent = 'Error';
+                    connectionStatus.className = 'connection-status disconnected';
                 }
             } catch (error) {
                 console.error('❌ Error polling progress:', error);
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'connection-status disconnected';
             }
             
             console.log('🔗 Progress URL:', `/api/progress/${sessionId}`);
