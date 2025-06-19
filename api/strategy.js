@@ -185,22 +185,45 @@ Return ONLY a valid JSON object with this exact structure:
       };
     }
 
-    // Store in database
-    const { data: savedStrategy, error: dbError } = await supabase
-      .from('business_strategies')
-      .insert({
+    // Try to store in database (but don't fail if it doesn't work)
+    let savedStrategy = null;
+    try {
+      console.log('💾 Attempting to save strategy to database...');
+      console.log('📊 Data to save:', {
         analysis_id: analysisId,
         domain: domainAnalysis.domain,
-        strategy
-      })
-      .select()
-      .single();
+        strategyKeys: Object.keys(strategy)
+      });
+      
+      const { data, error: dbError } = await supabase
+        .from('business_strategies')
+        .insert({
+          analysis_id: analysisId,
+          domain: domainAnalysis.domain,
+          strategy
+        })
+        .select()
+        .single();
 
-    if (dbError) {
-      console.error('Database error:', dbError);
+      if (dbError) {
+        console.error('❌ Database error details:', {
+          error: dbError,
+          message: dbError.message,
+          details: dbError.details,
+          hint: dbError.hint,
+          code: dbError.code
+        });
+        console.log('📝 Continuing without database save');
+      } else {
+        savedStrategy = data;
+        console.log('✅ Successfully saved strategy to database with ID:', savedStrategy?.id);
+      }
+    } catch (error) {
+      console.error('❌ Database connection failed:', error.message);
+      console.log('📝 Continuing without database save');
     }
 
-    console.log('Strategy generation completed');
+    console.log('🎯 Strategy generation completed successfully');
 
     return res.status(200).json({
       success: true,
