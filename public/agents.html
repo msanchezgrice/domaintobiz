@@ -420,13 +420,31 @@
         
         function connectToProgress() {
             const connectionStatus = document.getElementById('connectionStatus');
-            connectionStatus.textContent = 'Disabled';
-            connectionStatus.className = 'connection-status';
+            connectionStatus.textContent = 'Polling...';
+            connectionStatus.className = 'connection-status connected';
             
             console.group('📡 Progress Connection Setup');
-            console.log('🚫 Progress tracking disabled to avoid SSE connection errors');
+            console.log('🔄 Using polling instead of SSE');
             console.groupEnd();
-            return; // Early return to disable progress tracking
+            
+            // Poll for progress every 2 seconds
+            pollProgress();
+            setInterval(pollProgress, 2000);
+        }
+        
+        async function pollProgress() {
+            if (!sessionId || sessionId === 'undefined') return;
+            
+            try {
+                const response = await fetch(`/api/progress-status?sessionId=${sessionId}`);
+                if (response.ok) {
+                    const progress = await response.json();
+                    console.log('📡 Progress update:', progress);
+                    updateDashboard(progress);
+                }
+            } catch (error) {
+                console.error('❌ Error polling progress:', error);
+            }
             
             console.log('🔗 Progress URL:', `/api/progress/${sessionId}`);
             

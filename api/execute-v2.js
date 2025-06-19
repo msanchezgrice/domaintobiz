@@ -39,6 +39,19 @@ export default async function handler(req, res) {
     
     console.log(`🎯 Starting full pipeline for domain: ${targetDomain}`);
     console.log(`🆔 Execution ID: ${executionId}`);
+    
+    // Initialize progress tracking
+    const origin = `https://${req.headers.host}`;
+    await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        domain: targetDomain,
+        status: 'running',
+        completedSteps: 0,
+        totalSteps: 4
+      })
+    });
 
     // Step 1: Use bestDomainData if provided, otherwise analyze the domain
     let domainAnalysis = bestDomainData;
@@ -89,65 +102,119 @@ export default async function handler(req, res) {
     console.log('✅ Strategy generated successfully');
     console.log('📋 Business Model:', strategy.businessModel.type);
     console.log('🎯 Target Market:', strategy.businessModel.targetMarket);
+    
+    // Update progress
+    await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        completedSteps: 1,
+        agents: {
+          design: { status: 'starting', message: 'Preparing design system...' }
+        }
+      })
+    });
 
     // Step 3: Execute agents with full context
     console.log('🤖 Starting AI agents execution...');
     
-    const agentContext = {
-      domain: targetDomain,
-      domainAnalysis,
-      strategy,
-      executionId,
-      brandingGuidelines: {
-        businessType: strategy.businessModel.type,
-        targetAudience: strategy.brandStrategy.targetAudience,
-        brandPersonality: strategy.brandStrategy.brandPersonality,
-        uniqueValue: strategy.brandStrategy.uniqueValue
-      },
-      websiteRequirements: {
-        features: strategy.mvpScope.features,
-        positioning: strategy.brandStrategy.positioning,
-        competitors: strategy.marketAnalysis.competitors
+    const agentResults = {};
+    
+    // Execute Design Agent
+    console.log('🎨 Executing Design Agent...');
+    try {
+      const designResponse = await fetch(`${origin}/api/agents/design`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: targetDomain, strategy, executionId })
+      });
+      
+      const designData = await designResponse.json();
+      if (designResponse.ok && designData.success) {
+        agentResults.design = designData.data;
+        console.log('✅ Design Agent completed');
+        
+        // Update progress
+        await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            completedSteps: 2,
+            agents: {
+              design: { status: 'completed', message: 'Design system created' },
+              content: { status: 'starting', message: 'Generating content...' }
+            }
+          })
+        });
+      } else {
+        throw new Error(designData.message || 'Design agent failed');
       }
+    } catch (error) {
+      console.error('❌ Design Agent error:', error);
+      agentResults.design = {
+        status: 'error',
+        error: error.message,
+        fallback: true
+      };
+    }
+    
+    // Execute Content Agent
+    console.log('✍️ Executing Content Agent...');
+    try {
+      const contentResponse = await fetch(`${origin}/api/agents/content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          domain: targetDomain, 
+          strategy, 
+          designSystem: agentResults.design,
+          executionId 
+        })
+      });
+      
+      const contentData = await contentResponse.json();
+      if (contentResponse.ok && contentData.success) {
+        agentResults.content = contentData.data;
+        console.log('✅ Content Agent completed');
+        
+        // Update progress
+        await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            completedSteps: 3,
+            agents: {
+              content: { status: 'completed', message: 'Content generated' },
+              development: { status: 'starting', message: 'Building website...' }
+            }
+          })
+        });
+      } else {
+        throw new Error(contentData.message || 'Content agent failed');
+      }
+    } catch (error) {
+      console.error('❌ Content Agent error:', error);
+      agentResults.content = {
+        status: 'error',
+        error: error.message,
+        fallback: true
+      };
+    }
+    
+    // Mock development and deployment for now
+    agentResults.development = {
+      status: 'completed',
+      files: ['index.html', 'styles.css', 'script.js'],
+      framework: 'vanilla'
     };
     
-    console.log('📝 Agent context prepared:', {
-      domain: agentContext.domain,
-      businessType: agentContext.brandingGuidelines.businessType,
-      featuresCount: agentContext.websiteRequirements.features.length
-    });
-
-    // Simulate agent execution for now
-    const agentResults = {
-      design: {
-        status: 'completed',
-        colorPalette: ['#5730ec', '#8b5cf6', '#a78bfa'],
-        typography: { primary: 'Inter', secondary: 'Georgia' },
-        layout: 'modern-minimal'
-      },
-      content: {
-        status: 'completed',
-        hero: {
-          headline: `Welcome to ${targetDomain}`,
-          subheadline: strategy.brandStrategy.positioning,
-          cta: 'Get Started'
-        },
-        sections: strategy.mvpScope.features.map(f => ({ 
-          title: f, 
-          content: `Content for ${f}` 
-        }))
-      },
-      development: {
-        status: 'completed',
-        files: ['index.html', 'styles.css', 'script.js'],
-        framework: 'vanilla'
-      },
-      deployment: {
-        status: 'completed',
-        url: `https://${targetDomain}`,
-        hosting: 'vercel'
-      }
+    agentResults.deployment = {
+      status: 'completed',
+      url: `https://${targetDomain}`,
+      hosting: 'vercel'
     };
+    
+    console.log('🤖 All agents execution completed');
 
     // Step 4: Save results
     const result = {

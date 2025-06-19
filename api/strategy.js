@@ -198,7 +198,7 @@ Return ONLY a valid JSON object with this exact structure:
       const { data, error: dbError } = await supabase
         .from('business_strategies')
         .insert({
-          analysis_id: analysisId,
+          analysis_id: analysisId?.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ? analysisId : null,
           domain: domainAnalysis.domain,
           strategy
         })
