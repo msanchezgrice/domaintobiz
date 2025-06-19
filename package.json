@@ -1,0 +1,32 @@
+{
+  "name": "domain-analyzer",
+  "version": "1.0.0",
+  "description": "Domain analysis and automated business creation platform",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build needed'",
+    "start": "vercel dev",
+    "test": "node --test",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "@supabase/supabase-js": "^2.39.7",
+    "cheerio": "^1.0.0-rc.12",
+    "openai": "^4.24.0",
+    "whois": "^2.14.0",
+    "winston": "^3.11.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@vercel/node": "^3.0.21",
+    "dotenv": "^16.5.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  }
+}

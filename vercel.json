@@ -1,24 +1,31 @@
 {
-  "name": "claude-code-test",
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
+  "name": "domain-analyzer",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "source": "/api/progress/(.*)",
+      "destination": "/api/progress"
     },
     {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "source": "/app",
+      "destination": "/public/index.html"
+    },
+    {
+      "source": "/agents.html",
+      "destination": "/public/agents.html"
+    },
+    {
+      "source": "/projects.html", 
+      "destination": "/public/projects.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/public/landing.html"
     }
   ]
 }
