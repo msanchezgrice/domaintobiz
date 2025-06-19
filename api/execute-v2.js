@@ -46,8 +46,11 @@ export default async function handler(req, res) {
     if (!domainAnalysis) {
       console.log('📊 No domain data provided, analyzing domain...');
       
-      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://domaintobiz.vercel.app';
-      const analyzeResponse = await fetch(`${baseUrl}/api/analyze`, {
+      // Use origin from request for internal API calls
+      const origin = `https://${req.headers.host}`;
+      console.log('🌐 Using origin for internal calls:', origin);
+      
+      const analyzeResponse = await fetch(`${origin}/api/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domains: [targetDomain] })
@@ -65,8 +68,9 @@ export default async function handler(req, res) {
     // Step 2: Generate business strategy
     console.log('🤖 Generating business strategy...');
     
-    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://domaintobiz.vercel.app';
-    const strategyResponse = await fetch(`${baseUrl}/api/strategy`, {
+    // Use origin from request
+    const origin = `https://${req.headers.host}`;
+    const strategyResponse = await fetch(`${origin}/api/strategy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

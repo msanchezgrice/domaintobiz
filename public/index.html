@@ -825,7 +825,7 @@
                         console.group('🏗️ Business Creation Pipeline');
                         console.log('Executing business creation for:', analysisData.data.bestDomain.domain);
                         
-                        const executeResponse = await fetch('/api/execute', {
+                        const executeResponse = await fetch('/api/execute-v2', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
