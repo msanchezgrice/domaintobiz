@@ -697,12 +697,12 @@
                 // Temporarily disable progress tracking to avoid SSE spam
                 console.log('🔗 Progress tracking disabled - results should display immediately');
                 
-                if (false && executionId && executionId !== 'undefined') {
+                if (executionId && executionId !== 'undefined') {
                     console.group('📡 Real-time Progress Tracking');
-                    console.log('🔗 Progress URL:', `/api/progress/${executionId}`);
+                    console.log('🔗 Progress URL:', `/api/progress-status?sessionId=${executionId}`);
                     
-                    // Start listening to real-time updates
-                    const analysisEventSource = new EventSource(`/api/progress/${executionId}`);
+                    // Start listening to real-time updates  
+                    const analysisEventSource = new EventSource(`/api/progress-status?sessionId=${executionId}`);
                     
                     analysisEventSource.onmessage = function(event) {
                         console.log('📨 Progress update received');
@@ -844,24 +844,32 @@
                                 console.log('✅ Business creation started successfully');
                                 console.log('Session ID:', executeData.sessionId);
                                 
-                                status.style.display = 'none';
-                                progressContainer.style.display = 'block';
-                                
-                                // Show agent dashboard inline
-                                const agentViewer = document.getElementById('agentViewer');
-                                const agentFrame = document.getElementById('agentFrame');
-                                
-                                const agentUrl = `/agents.html?session=${executeData.sessionId}&domain=${encodeURIComponent(executeData.domain || analysisData.data.bestDomain.domain)}`;
-                                console.log('Loading agent dashboard:', agentUrl);
-                                agentFrame.src = agentUrl;
-                                agentViewer.style.display = 'block';
-                                
-                                // Scroll to agent viewer
-                                agentViewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                
-                                // Start listening to progress updates
-                                console.log('Starting progress tracking for session:', executeData.sessionId);
-                                startProgressTracking(executeData.sessionId);
+                                // Check if execution completed immediately
+                                if (executeData.result && executeData.result.websiteUrl) {
+                                    console.log('🚀 Execution completed immediately, showing final result');
+                                    status.style.display = 'none';
+                                    showFinalResult(executeData.result);
+                                } else {
+                                    // Start progress tracking for ongoing execution
+                                    status.style.display = 'none';
+                                    progressContainer.style.display = 'block';
+                                    
+                                    // Show agent dashboard inline
+                                    const agentViewer = document.getElementById('agentViewer');
+                                    const agentFrame = document.getElementById('agentFrame');
+                                    
+                                    const agentUrl = `/agents.html?session=${executeData.sessionId}&domain=${encodeURIComponent(executeData.domain || analysisData.data.bestDomain.domain)}`;
+                                    console.log('Loading agent dashboard:', agentUrl);
+                                    agentFrame.src = agentUrl;
+                                    agentViewer.style.display = 'block';
+                                    
+                                    // Scroll to agent viewer
+                                    agentViewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    
+                                    // Start listening to progress updates
+                                    console.log('Starting progress tracking for session:', executeData.sessionId);
+                                    startProgressTracking(executeData.sessionId);
+                                }
                                 console.groupEnd();
                             } else {
                                 console.error('❌ Business creation request failed');
@@ -972,7 +980,7 @@
                 eventSource.close();
             }
             
-            const progressUrl = `/api/progress/${sessionId}`;
+            const progressUrl = `/api/progress-status?sessionId=${sessionId}`;
             console.log('Starting progress tracking:', progressUrl);
             eventSource = new EventSource(progressUrl);
             

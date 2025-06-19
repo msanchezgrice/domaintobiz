@@ -61,6 +61,9 @@ export default async function handler(req, res) {
     
     console.log(`🎯 Target domain: ${targetDomain}`);
 
+    // Generate deployment URL
+    const actualDeploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/deployments/${targetDomain}/`;
+    
     // Simplified execution for now
     const result = {
       executionId,
@@ -70,7 +73,9 @@ export default async function handler(req, res) {
         domain: targetDomain,
         analysis: `Basic analysis completed for ${targetDomain}`,
         strategy: `Strategy generated for ${targetDomain}`,
-        website: `Website generated for ${targetDomain}`
+        website: `Website generated for ${targetDomain}`,
+        websiteUrl: actualDeploymentUrl,
+        originalDomain: targetDomain
       },
       timestamp: new Date().toISOString()
     };
@@ -83,7 +88,8 @@ export default async function handler(req, res) {
       .insert({
         domain: targetDomain,
         website_data: result,
-        deployment_url: `https://${targetDomain}`,
+        deployment_url: actualDeploymentUrl,
+        original_domain: targetDomain,
         status: 'completed'
       })
       .select()
@@ -111,6 +117,12 @@ export default async function handler(req, res) {
       sessionId: executionId, // Same as executionId for compatibility
       domain: targetDomain, // Include domain for agent dashboard
       data: result,
+      result: {
+        domain: targetDomain,
+        websiteUrl: actualDeploymentUrl,
+        originalDomain: targetDomain,
+        deploymentId: executionId
+      },
       id: savedWebsite?.id,
       timestamp: new Date().toISOString()
     });
