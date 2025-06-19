@@ -147,33 +147,64 @@ export default async function handler(req, res) {
         body: JSON.stringify({ domain: targetDomain, strategy, executionId })
       });
       
-      const designData = await designResponse.json();
-      if (designResponse.ok && designData.success) {
-        agentResults.design = designData.data;
-        console.log('✅ Design Agent completed');
-        
-        // Update progress
-        await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            completedSteps: 2,
-            agents: {
-              design: { status: 'completed', message: 'Design system created' },
-              content: { status: 'starting', message: 'Generating content...' }
-            }
-          })
-        });
-      } else {
-        throw new Error(designData.message || 'Design agent failed');
+      if (!designResponse.ok) {
+        throw new Error(`Design agent HTTP error: ${designResponse.status}`);
       }
+      
+      const designData = await designResponse.json();
+      if (designData.success) {
+        agentResults.design = designData.data;
+        console.log('✅ Design Agent completed successfully');
+      } else {
+        throw new Error(designData.message || designData.error || 'Design agent failed');
+      }
+      
+      // Update progress
+      await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          completedSteps: 2,
+          agents: {
+            design: { status: 'completed', message: 'Design system created' },
+            content: { status: 'starting', message: 'Generating content...' }
+          }
+        })
+      });
+      
     } catch (error) {
       console.error('❌ Design Agent error:', error);
       agentResults.design = {
         status: 'error',
         error: error.message,
-        fallback: true
+        fallback: {
+          colorPalette: {
+            primary: '#3B82F6',
+            secondary: '#1E40AF',
+            accent: '#60A5FA',
+            background: '#FFFFFF',
+            text: '#1F2937'
+          },
+          typography: {
+            primary: 'Inter',
+            secondary: 'system-ui'
+          },
+          layout: 'modern-minimal'
+        }
       };
+      
+      // Update progress with error but continue
+      await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          completedSteps: 2,
+          agents: {
+            design: { status: 'error', message: 'Design failed - using fallback' },
+            content: { status: 'starting', message: 'Generating content...' }
+          }
+        })
+      });
     }
     
     // Execute Content Agent
@@ -185,38 +216,76 @@ export default async function handler(req, res) {
         body: JSON.stringify({ 
           domain: targetDomain, 
           strategy, 
-          designSystem: agentResults.design,
+          designSystem: agentResults.design?.fallback || agentResults.design,
           executionId 
         })
       });
       
-      const contentData = await contentResponse.json();
-      if (contentResponse.ok && contentData.success) {
-        agentResults.content = contentData.data;
-        console.log('✅ Content Agent completed');
-        
-        // Update progress
-        await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            completedSteps: 3,
-            agents: {
-              content: { status: 'completed', message: 'Content generated' },
-              development: { status: 'starting', message: 'Building website...' }
-            }
-          })
-        });
-      } else {
-        throw new Error(contentData.message || 'Content agent failed');
+      if (!contentResponse.ok) {
+        throw new Error(`Content agent HTTP error: ${contentResponse.status}`);
       }
+      
+      const contentData = await contentResponse.json();
+      if (contentData.success) {
+        agentResults.content = contentData.data;
+        console.log('✅ Content Agent completed successfully');
+      } else {
+        throw new Error(contentData.message || contentData.error || 'Content agent failed');
+      }
+      
+      // Update progress
+      await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          completedSteps: 3,
+          agents: {
+            content: { status: 'completed', message: 'Content generated' },
+            development: { status: 'starting', message: 'Building website...' }
+          }
+        })
+      });
+      
     } catch (error) {
       console.error('❌ Content Agent error:', error);
       agentResults.content = {
         status: 'error',
         error: error.message,
-        fallback: true
+        fallback: {
+          hero: {
+            headline: `Welcome to ${targetDomain}`,
+            subheadline: strategy.brandStrategy?.positioning || 'Your business solution',
+            cta: {
+              primary: { text: 'Get Started', link: '#signup' },
+              secondary: { text: 'Learn More', link: '#features' }
+            }
+          },
+          sections: [
+            {
+              title: 'Features',
+              content: 'Discover what makes us different',
+              features: strategy.mvpScope?.features?.map(f => ({
+                title: f,
+                description: `Learn more about ${f}`,
+                icon: 'star'
+              })) || []
+            }
+          ]
+        }
       };
+      
+      // Update progress with error but continue
+      await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          completedSteps: 3,
+          agents: {
+            content: { status: 'error', message: 'Content failed - using fallback' },
+            development: { status: 'starting', message: 'Building website...' }
+          }
+        })
+      });
     }
     
     // Mock development and deployment for now

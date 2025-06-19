@@ -20,7 +20,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { domainAnalysis, analysisId } = req.body;
+    // Validate request body exists
+    if (!req.body) {
+      console.error('❌ No request body provided');
+      return res.status(400).json({ 
+        error: 'Request body is required' 
+      });
+    }
+
+    // Handle potential JSON parsing errors
+    let parsedBody;
+    try {
+      parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      return res.status(400).json({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      });
+    }
+
+    const { domainAnalysis, analysisId } = parsedBody;
 
     if (!domainAnalysis) {
       return res.status(400).json({ 
@@ -124,15 +144,26 @@ Return ONLY a valid JSON object with this exact structure:
         console.log(responseText);
         console.log('='.repeat(80));
         
-        // Parse JSON response
+        // Parse JSON response - handle markdown formatting
         try {
-          strategy = JSON.parse(responseText);
+          // Clean the response text
+          let cleanedResponse = responseText.trim();
+          
+          // Remove markdown code blocks if present
+          if (cleanedResponse.startsWith('```json')) {
+            cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          } else if (cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          strategy = JSON.parse(cleanedResponse);
           strategy.timestamp = new Date().toISOString();
           
           console.log('✅ Successfully parsed strategy from OpenAI');
           console.log('📊 Full parsed strategy:', JSON.stringify(strategy, null, 2));
         } catch (parseError) {
           console.error('❌ Failed to parse OpenAI response as JSON:', parseError);
+          console.log('🔍 Raw response:', responseText);
           console.log('🔄 Attempting to extract JSON from response...');
           
           // Try to extract JSON from response if wrapped in markdown

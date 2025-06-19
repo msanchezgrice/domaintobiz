@@ -13,7 +13,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { domain, strategy, designSystem, executionId } = req.body;
+    // Validate request body exists
+    if (!req.body) {
+      console.error('❌ No request body provided');
+      return res.status(400).json({ 
+        error: 'Request body is required' 
+      });
+    }
+
+    // Handle potential JSON parsing errors
+    let parsedBody;
+    try {
+      parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      return res.status(400).json({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      });
+    }
+
+    const { domain, strategy, designSystem, executionId } = parsedBody;
 
     if (!domain || !strategy) {
       return res.status(400).json({ 
@@ -121,17 +141,36 @@ Return ONLY a valid JSON object with this structure:
         const responseText = completion.choices[0].message.content;
         console.log('📥 Content AI response received');
         
-        // Parse JSON response
+        // Parse JSON response - handle markdown formatting
         try {
-          websiteContent = JSON.parse(responseText);
+          // Clean the response text
+          let cleanedResponse = responseText.trim();
+          
+          // Remove markdown code blocks if present
+          if (cleanedResponse.startsWith('```json')) {
+            cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          } else if (cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          websiteContent = JSON.parse(cleanedResponse);
           websiteContent.status = 'completed';
           console.log('✅ Successfully parsed website content');
         } catch (parseError) {
           console.error('❌ Failed to parse content response:', parseError);
+          console.log('🔍 Raw response:', responseText);
+          
+          // Try to extract JSON from response
           const jsonMatch = responseText.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
-            websiteContent = JSON.parse(jsonMatch[0]);
-            websiteContent.status = 'completed';
+            try {
+              websiteContent = JSON.parse(jsonMatch[0]);
+              websiteContent.status = 'completed';
+              console.log('✅ Successfully extracted JSON from response');
+            } catch (extractError) {
+              console.error('❌ Failed to parse extracted JSON:', extractError);
+              throw parseError;
+            }
           } else {
             throw parseError;
           }

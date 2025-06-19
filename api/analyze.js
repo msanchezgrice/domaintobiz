@@ -20,13 +20,34 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Validate request body exists
+    if (!req.body) {
+      console.error('❌ No request body provided');
+      return res.status(400).json({ 
+        error: 'Request body is required' 
+      });
+    }
+
+    // Handle potential JSON parsing errors
+    let parsedBody;
+    try {
+      parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      return res.status(400).json({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      });
+    }
+
     // Check if environment variables are set
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
       return res.status(500).json({ 
         error: 'Server configuration error: Missing database credentials' 
       });
     }
-    const { domains, trackProgress } = req.body;
+    
+    const { domains, trackProgress } = parsedBody;
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return res.status(400).json({ 
@@ -73,6 +94,23 @@ export default async function handler(req, res) {
         if (domain.length <= 12) score += 20; // Shorter is better
         if (!domain.includes('-')) score += 10; // No hyphens is better
         
+        // Additional scoring factors
+        const extension = domain.split('.').pop().toLowerCase();
+        if (extension === 'com') score += 15; // .com is premium
+        if (extension === 'io') score += 10; // .io is tech-friendly
+        if (extension === 'ai') score += 8; // .ai is trendy
+        
+        // Check for common words that make domains valuable
+        const domainName = domain.split('.')[0].toLowerCase();
+        const valuableKeywords = ['app', 'tech', 'ai', 'data', 'cloud', 'digital', 'smart', 'auto', 'pro', 'hub'];
+        if (valuableKeywords.some(keyword => domainName.includes(keyword))) {
+          score += 15;
+        }
+        
+        // Penalize very long domains
+        if (domain.length > 15) score -= 10;
+        if (domain.length > 20) score -= 20;
+        
         const domainAnalysis = {
           domain,
           score,
@@ -86,12 +124,31 @@ export default async function handler(req, res) {
             extension: domain.split('.').pop(),
             availability: !hasWebsite ? 'likely available' : 'taken'
           },
-          // Add breakdown for UI compatibility
+          // Add breakdown for UI compatibility with more realistic scoring
           breakdown: {
-            memorability: Math.min(100, score + Math.random() * 20), // Base on score + randomness
-            brandability: Math.min(100, (domain.length <= 8 ? 80 : 60) + Math.random() * 20),
-            seoValue: Math.min(100, (!hasWebsite ? 70 : 30) + Math.random() * 30),
-            marketPotential: Math.min(100, score * 0.8 + Math.random() * 40)
+            memorability: Math.min(100, Math.max(20, 
+              (domain.length <= 8 ? 80 : 50) + 
+              (!domain.includes('-') ? 15 : 0) + 
+              (Math.random() * 20 - 10)
+            )),
+            brandability: Math.min(100, Math.max(15,
+              (domainName.match(/[aeiou]/g)?.length || 0) * 8 + // Vowels make it more brandable
+              (domain.length <= 10 ? 60 : 30) +
+              (extension === 'com' ? 20 : 5) +
+              (Math.random() * 25 - 12)
+            )),
+            seoValue: Math.min(100, Math.max(10,
+              (!hasWebsite ? 70 : 20) + 
+              (extension === 'com' ? 25 : extension === 'org' ? 15 : 10) +
+              (valuableKeywords.some(keyword => domainName.includes(keyword)) ? 20 : 0) +
+              (Math.random() * 30 - 15)
+            )),
+            marketPotential: Math.min(100, Math.max(25,
+              score * 0.7 + 
+              (valuableKeywords.some(keyword => domainName.includes(keyword)) ? 25 : 0) +
+              (!hasWebsite ? 20 : 5) +
+              (Math.random() * 35 - 17)
+            ))
           },
           timestamp: new Date().toISOString()
         };
