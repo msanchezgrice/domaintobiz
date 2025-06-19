@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "name": "domain-analyzer",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/progress/(.*)",
+      "destination": "/api/progress"
+    },
+    {
+      "source": "/app",
+      "destination": "/public/index.html"
+    },
+    {
+      "source": "/agents.html",
+      "destination": "/public/agents.html"
+    },
+    {
+      "source": "/projects.html", 
+      "destination": "/public/projects.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/public/landing.html"
+    }
+  ]
+}
