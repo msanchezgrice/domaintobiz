@@ -397,36 +397,46 @@
         
         async function loadProjects() {
             try {
-                // Load deployed projects
-                const deployedResponse = await fetch('/api/deployed');
-                const deployedData = await deployedResponse.json();
+                console.log('🔄 Loading projects...');
                 
-                // Load project history (you might want to add this endpoint)
-                const historyResponse = await fetch('/api/projects').catch(() => ({
-                    json: () => ({ success: true, projects: [] })
-                }));
-                const historyData = await historyResponse.json();
+                // Load projects from new API
+                const projectsResponse = await fetch('/api/projects');
+                if (!projectsResponse.ok) {
+                    throw new Error(`HTTP error! status: ${projectsResponse.status}`);
+                }
                 
-                // Combine and process data
-                projects = deployedData.deployments.map(deployment => ({
-                    id: deployment.domain,
-                    domain: deployment.domain,
-                    url: deployment.url,
-                    port: deployment.port,
-                    status: 'deployed',
-                    score: Math.floor(Math.random() * 40) + 60, // Placeholder
-                    createdAt: new Date().toISOString(),
-                    description: generateDescription(deployment.domain),
-                    businessType: inferBusinessType(deployment.domain),
-                    ...deployment
-                }));
+                const projectsData = await projectsResponse.json();
+                console.log('📊 Projects data received:', projectsData);
+                
+                if (!projectsData.success) {
+                    throw new Error(projectsData.error || 'Failed to load projects');
+                }
+                
+                // Use the new data structure
+                projects = projectsData.data.projects || [];
+                
+                // Update stats
+                const stats = projectsData.data.stats;
+                updateStatsDisplay(stats);
                 
                 displayProjects();
-                updateStats();
                 
             } catch (error) {
                 console.error('Failed to load projects:', error);
                 showError('Failed to load projects');
+            }
+        }
+        
+        function updateStatsDisplay(stats) {
+            if (stats) {
+                // Update stat numbers in the dashboard
+                const statElements = document.querySelectorAll('.stat-number');
+                if (statElements.length >= 4) {
+                    statElements[0].textContent = stats.totalProjects || '0';
+                    statElements[1].textContent = stats.deployed || '0';
+                    statElements[2].textContent = stats.avgScore || '0';
+                    statElements[3].textContent = `${stats.successRate || 100}%`;
+                }
             }
         }
         
@@ -482,16 +492,16 @@
                     
                     <div class="project-stats">
                         <div class="project-stat">
-                            <div class="project-stat-value">${project.status === 'deployed' ? 'Live' : 'Offline'}</div>
+                            <div class="project-stat-value">${project.status === 'deployed' ? 'Live' : 'Pending'}</div>
                             <div class="project-stat-label">Status</div>
                         </div>
                         <div class="project-stat">
-                            <div class="project-stat-value">${project.port || 'N/A'}</div>
-                            <div class="project-stat-label">Port</div>
+                            <div class="project-stat-value">${project.businessType || 'Website'}</div>
+                            <div class="project-stat-label">Type</div>
                         </div>
                         <div class="project-stat">
-                            <div class="project-stat-value">${project.businessType}</div>
-                            <div class="project-stat-label">Type</div>
+                            <div class="project-stat-value">${project.features?.length || 0}</div>
+                            <div class="project-stat-label">Features</div>
                         </div>
                     </div>
                     

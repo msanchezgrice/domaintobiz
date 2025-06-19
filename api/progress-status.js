@@ -18,7 +18,58 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    // Get current progress
+    // Check if this is an EventSource request
+    const acceptHeader = req.headers.accept;
+    if (acceptHeader && acceptHeader.includes('text/event-stream')) {
+      // Set up Server-Sent Events
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+      });
+
+      // Send initial progress state
+      const progress = progressStore.get(sessionId) || {
+        sessionId,
+        status: 'waiting',
+        domain: 'Loading...',
+        agents: {
+          design: { status: 'waiting', message: 'Waiting' },
+          content: { status: 'waiting', message: 'Waiting' },
+          development: { status: 'waiting', message: 'Waiting' },
+          deployment: { status: 'waiting', message: 'Waiting' }
+        },
+        completedSteps: 0,
+        totalSteps: 4
+      };
+
+      res.write(`data: ${JSON.stringify(progress)}\n\n`);
+
+      // Set up polling for updates
+      const pollInterval = setInterval(() => {
+        const currentProgress = progressStore.get(sessionId);
+        if (currentProgress) {
+          res.write(`data: ${JSON.stringify(currentProgress)}\n\n`);
+          
+          // Close connection if completed
+          if (currentProgress.status === 'completed' || currentProgress.status === 'error') {
+            clearInterval(pollInterval);
+            res.end();
+          }
+        }
+      }, 1000);
+
+      // Clean up on client disconnect
+      req.on('close', () => {
+        clearInterval(pollInterval);
+      });
+
+      return;
+    }
+
+    // Regular JSON response for non-SSE requests
     const progress = progressStore.get(sessionId) || {
       sessionId,
       status: 'waiting',

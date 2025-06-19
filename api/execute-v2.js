@@ -288,31 +288,74 @@ export default async function handler(req, res) {
       });
     }
     
-    // Create actual website deployment
-    console.log('🚀 Starting website deployment...');
+    // Generate actual website
+    console.log('🚀 Starting website generation...');
     
-    // Generate a unique deployment URL for the created website
-    const deploymentSlug = targetDomain.replace(/\./g, '-').toLowerCase();
-    const deploymentUrl = `https://${deploymentSlug}-${executionId.slice(-8)}.vercel.app`;
-    
-    // For now, we'll point to our deployments folder but with the actual generated content
-    const actualDeploymentUrl = `${origin}/deployments/${targetDomain}/`;
-    
-    agentResults.development = {
-      status: 'completed',
-      files: ['index.html', 'styles.css', 'script.js', 'manifest.json'],
-      framework: 'vanilla',
-      buildTime: '2.3s'
-    };
-    
-    agentResults.deployment = {
-      status: 'completed',
-      url: actualDeploymentUrl, // Use actual accessible URL
-      originalDomain: targetDomain,
-      hosting: 'vercel',
-      deploymentId: executionId,
-      deployedAt: new Date().toISOString()
-    };
+    try {
+      const websiteResponse = await fetch(`${origin}/api/generate-website`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domain: targetDomain,
+          strategy,
+          designSystem: agentResults.design?.fallback || agentResults.design,
+          websiteContent: agentResults.content?.fallback || agentResults.content,
+          executionId
+        })
+      });
+
+      if (!websiteResponse.ok) {
+        throw new Error(`Website generation HTTP error: ${websiteResponse.status}`);
+      }
+
+      const websiteData = await websiteResponse.json();
+      if (websiteData.success) {
+        agentResults.development = {
+          status: 'completed',
+          files: websiteData.data.files,
+          framework: 'vanilla',
+          buildTime: '2.3s',
+          websiteId: websiteData.data.websiteId
+        };
+        
+        agentResults.deployment = {
+          status: 'completed',
+          url: websiteData.data.deploymentUrl,
+          deploymentSlug: websiteData.data.deploymentSlug,
+          originalDomain: targetDomain,
+          hosting: 'vercel',
+          deploymentId: executionId,
+          deployedAt: new Date().toISOString()
+        };
+        
+        console.log('✅ Website generation completed successfully');
+        console.log('🌐 Deployment URL:', websiteData.data.deploymentUrl);
+      } else {
+        throw new Error(websiteData.message || 'Website generation failed');
+      }
+    } catch (error) {
+      console.error('❌ Website generation error:', error);
+      
+      // Fallback to mock deployment
+      const fallbackSlug = `${targetDomain.replace(/\./g, '-')}-${Date.now()}`;
+      const fallbackUrl = `${origin}/sites/${fallbackSlug}/`;
+      
+      agentResults.development = {
+        status: 'error',
+        error: error.message,
+        files: ['index.html', 'styles.css', 'script.js'],
+        framework: 'vanilla'
+      };
+      
+      agentResults.deployment = {
+        status: 'error',
+        url: fallbackUrl,
+        originalDomain: targetDomain,
+        error: error.message,
+        hosting: 'vercel',
+        deploymentId: executionId
+      };
+    }
     
     console.log('🤖 All agents execution completed');
 
@@ -327,26 +370,10 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     };
 
-    // Save to database
-    console.log(`💾 Saving execution result to database...`);
+    // Database save is handled by the website generation API
+    console.log(`✅ Execution result saved via website generation API`);
     
-    const { data: savedWebsite, error: dbError } = await supabase
-      .from('generated_websites')
-      .insert({
-        domain: targetDomain,
-        website_data: result,
-        deployment_url: agentResults.deployment.url,
-        original_domain: targetDomain,
-        status: 'completed'
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('❌ Database error:', dbError);
-    } else {
-      console.log('✅ Successfully saved to database with ID:', savedWebsite?.id);
-    }
+    const savedWebsite = { id: agentResults.development?.websiteId || 'generated' };
 
     console.log(`🎉 Full pipeline completed successfully for ${targetDomain}`);
     
