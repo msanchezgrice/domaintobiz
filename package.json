@@ -8,9 +8,10 @@
     "dev": "vercel dev",
     "build": "echo 'Static site - no build needed'",
     "start": "vercel dev",
-    "test": "node --test tests/**/*.test.js",
-    "test:coverage": "c8 --reporter=html --reporter=text node --test",
-    "test:watch": "node --test --watch",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "deploy": "vercel --prod"
@@ -27,11 +28,14 @@
   "devDependencies": {
     "@types/node": "^20.10.6",
     "@vercel/node": "^3.0.21",
+    "@vitest/ui": "^3.2.4",
     "c8": "^8.0.1",
     "dotenv": "^16.5.0",
     "eslint": "^8.56.0",
+    "jsdom": "^26.1.0",
     "nock": "^13.5.4",
     "sinon": "^17.0.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
   }
 }

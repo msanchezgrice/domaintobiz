@@ -12,6 +12,14 @@
       "destination": "/api/progress"
     },
     {
+      "source": "/sites/([^/]+)/([^/]+)",
+      "destination": "/api/site?slug=$1&file=$2"
+    },
+    {
+      "source": "/sites/([^/]+)/?",
+      "destination": "/api/site?slug=$1"
+    },
+    {
       "source": "/app",
       "destination": "/public/index.html"
     },
