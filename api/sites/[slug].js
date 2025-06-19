@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
-
 export default async function handler(req, res) {
+  // Create Supabase client inside the handler to ensure env vars are available
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+  );
   const { slug } = req.query;
   const { file } = req.query; // For file-specific requests like styles.css
 
