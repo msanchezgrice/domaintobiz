@@ -172,17 +172,22 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
   };
 
   const sections = websiteContent?.sections || {};
-  const hero = sections.hero || {
-    title: strategy.brandStrategy?.businessName || domain,
-    subtitle: strategy.brandStrategy?.positioning || 'Transform Your Business',
-    content: strategy.brandStrategy?.uniqueSellingProposition || `Welcome to ${domain}`,
+  const hero = sections.hero || websiteContent?.hero || {
+    headline: strategy.businessModel?.businessConcept || strategy.brandStrategy?.businessName || domain,
+    subheadline: strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || 'Transform Your Business',
     cta: { primary: { text: 'Get Started', link: '#' }, secondary: { text: 'Learn More', link: '#features' } }
   };
+  
+  // Use the actual hero content structure
+  const heroTitle = hero.headline || hero.title || strategy.businessModel?.businessConcept || domain;
+  const heroSubtitle = hero.subheadline || hero.subtitle || strategy.businessModel?.valueProposition || 'Transform Your Business';
 
-  const features = sections.features?.items || strategy.mvpScope?.features?.map(f => ({
-    title: f,
-    description: `Experience the power of ${f} for your business growth.`
-  })) || [];
+  const features = sections.features?.items || 
+    websiteContent?.sections?.find(s => s.id === 'features')?.features ||
+    (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || strategy.mvpScope?.features)?.map(f => ({
+      title: typeof f === 'object' ? f.name || f.title : f,
+      description: typeof f === 'object' ? f.description : `Experience the power of ${f} for your business growth.`
+    })) || [];
 
   const pricing = sections.pricing?.items || [
     { title: 'Starter', price: '$29', period: '/month', description: 'Perfect for individuals getting started', features: ['Core features', 'Email support', 'Basic analytics'] },
@@ -249,8 +254,8 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
     <section class="hero">
         <div class="container">
             <div class="hero-content">
-                <h1 class="hero-headline">${hero.title}</h1>
-                <p class="hero-subheadline">${hero.subtitle}</p>
+                <h1 class="hero-headline">${heroTitle}</h1>
+                <p class="hero-subheadline">${heroSubtitle}</p>
                 <div class="hero-cta">
                     <button class="btn btn-primary btn-lg" data-modal="signup">${hero.cta?.primary?.text || 'Get Started'}</button>
                     <a href="#features" class="btn btn-secondary btn-lg">${hero.cta?.secondary?.text || 'Learn More'}</a>

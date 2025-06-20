@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { domain, strategy, designSystem, executionId } = parsedBody;
+    const { domain, strategy, designSystem, executionId, regenerate, userComments, projectId } = parsedBody;
 
     if (!domain || !strategy) {
       return res.status(400).json({ 
@@ -42,7 +42,13 @@ export default async function handler(req, res) {
     }
 
     console.log(`✍️ Content Agent starting for ${domain}`);
-    console.log(`📊 Features to write: ${strategy.mvpScope.features.join(', ')}`);
+    console.log(`🔄 Regeneration mode: ${regenerate ? 'YES' : 'NO'}`);
+    if (userComments) {
+      console.log(`💬 User feedback: ${userComments}`);
+    }
+    console.log(`📊 Business concept: ${strategy.businessModel?.businessConcept || 'Not defined'}`);
+    console.log(`🎯 Target market: ${strategy.businessModel?.targetMarket || 'Not defined'}`);
+    console.log(`🏭 Industry: ${strategy.businessModel?.industry || 'Not defined'}`);
 
     // Real AI content generation
     let websiteContent;
@@ -75,19 +81,47 @@ export default async function handler(req, res) {
         });
 
         const prompt = `
-You are an expert copywriter. Create compelling website content for:
+You are an expert copywriter. Create compelling website content for a domain-specific business.
 
+DOMAIN ANALYSIS & BUSINESS CONTEXT:
 Domain: ${domain}
-Business Type: ${strategy.businessModel.type}
-Value Proposition: ${strategy.brandStrategy.uniqueValue}
-Target Audience: ${strategy.brandStrategy.targetAudience}
-Brand Voice: ${strategy.brandStrategy.brandPersonality}
-Key Features: ${strategy.mvpScope.features.join(', ')}
+Business Concept: ${strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning || 'Business based on domain analysis'}
+Industry: ${strategy.businessModel?.industry || 'Professional Services'}
+Target Market: ${strategy.businessModel?.targetMarket || strategy.businessModel?.targetPersona || 'General audience'}
+Value Proposition: ${strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || 'Comprehensive solution'}
+Revenue Model: ${strategy.businessModel?.revenueModel || 'Service-based'}
+Problem Solved: ${strategy.businessModel?.problemSolved || 'Key challenges addressed'}
 
-CRITICAL: The content MUST align perfectly with the domain name meaning.
-For "${domain}": ${strategy.businessModel.description}
+BRAND STRATEGY:
+Brand Positioning: ${strategy.brandStrategy?.positioning || 'Trusted authority'}
+Brand Promise: ${strategy.brandStrategy?.brandPromise || 'Exceptional value delivery'}
+Core Values: ${strategy.brandStrategy?.values?.join(', ') || 'Trust, expertise, innovation'}
+Brand Personality: ${strategy.brandStrategy?.personality?.join(', ') || 'Professional, reliable, innovative'}
+Tone of Voice: ${strategy.brandStrategy?.toneOfVoice?.description || 'Professional yet approachable'}
 
-Create website copy that directly addresses the target audience's needs.
+MVP FEATURES:
+Core Features: ${strategy.mvpScope?.coreFeatures?.map(f => f.name || f).join(', ') || strategy.mvpPlan?.coreFeatures?.map(f => f.name || f).join(', ') || 'Key service offerings'}
+
+${regenerate && userComments ? `
+USER FEEDBACK FOR REGENERATION:
+The user has provided the following feedback for improving the website:
+"${userComments}"
+
+IMPORTANT: Incorporate this feedback into the new content while maintaining the business strategy.
+` : ''}
+
+CRITICAL REQUIREMENTS:
+1. The content MUST be specifically tailored to the business concept: "${strategy.businessModel?.businessConcept}"
+2. Address the exact target market: "${strategy.businessModel?.targetMarket}"
+3. Solve the specific problem: "${strategy.businessModel?.problemSolved}"
+4. Reflect the industry: "${strategy.businessModel?.industry}"
+5. DO NOT use generic placeholders like "Transform your [industry] with [domain]"
+6. Create compelling, specific headlines that would make the target audience immediately understand the value
+7. Make the content authentic to what this specific business would actually offer
+
+${regenerate ? 'This is a REGENERATION - create improved content based on the user feedback above.' : 'This is a NEW GENERATION - create original content.'}
+
+Create website copy that directly speaks to the target audience's specific needs and pain points.
 
 Return ONLY a valid JSON object with this structure:
 {

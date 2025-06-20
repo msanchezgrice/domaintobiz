@@ -60,9 +60,24 @@ export class BusinessStrategyEngine {
       domain: domainAnalysis.domain,
       businessModel,
       brandStrategy,
+      mvpScope: mvpPlan, // Also add as mvpScope for backward compatibility
       mvpPlan,
-      implementation
+      implementation,
+      // Add flat fields for easier access in templates
+      targetMarket: businessModel.targetMarket,
+      valueProposition: businessModel.valueProposition,
+      industry: businessModel.industry,
+      revenueModel: businessModel.revenueModel
     };
+
+    console.log('🎯 Final strategy structure:', JSON.stringify({
+      businessModel: !!businessModel,
+      brandStrategy: !!brandStrategy,
+      mvpPlan: !!mvpPlan,
+      hasTargetMarket: !!businessModel.targetMarket,
+      hasValueProposition: !!businessModel.valueProposition,
+      hasIndustry: !!businessModel.industry
+    }, null, 2));
 
     return strategy;
   }
@@ -159,7 +174,7 @@ export class BusinessStrategyEngine {
       max_tokens: 1500
     });
 
-    return this.parseJSONResponse(response.content[0].text, 'business model', {
+    const businessModel = this.parseJSONResponse(response.content[0].text, 'business model', {
       domainMeaning: `Meaning derived from ${context.domainName}`,
       businessConcept: `Service platform based on ${context.domainName}`,
       type: 'Digital Platform',
@@ -175,6 +190,11 @@ export class BusinessStrategyEngine {
       keyMetrics: ['user engagement', 'conversion rate', 'customer satisfaction'],
       competitiveAdvantage: 'First-mover advantage with domain-specific expertise'
     });
+
+    // Log the business model for debugging
+    console.log('📊 Generated business model:', JSON.stringify(businessModel, null, 2));
+    
+    return businessModel;
   }
 
   async defineBrandStrategy(context, businessModel, tracker = null) {
