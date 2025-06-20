@@ -1,90 +1,111 @@
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Lazy load OpenAI to handle missing dependency gracefully
+let openai = null;
+let OpenAI = null;
+
+async function getOpenAI() {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    try {
+      if (!OpenAI) {
+        OpenAI = (await import('openai')).default;
+      }
+      openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+    } catch (error) {
+      console.error('❌ Failed to load OpenAI:', error);
+      return null;
+    }
+  }
+  return openai;
+}
 
 async function analyzeDomainWithLLM(domains) {
-  if (!process.env.OPENAI_API_KEY) {
-    console.log('⚠️ OpenAI API key not found, using basic analysis');
+  const openaiClient = await getOpenAI();
+  
+  if (!openaiClient) {
+    console.log('⚠️ OpenAI not available, using basic analysis');
+    return null;
+  }
+
+  // Skip AI analysis for large batches to avoid timeout
+  if (domains.length > 10) {
+    console.log(`⚠️ Skipping AI analysis for ${domains.length} domains (too many for timeout limits)`);
     return null;
   }
 
   try {
     console.log('🤖 Using AI to analyze domains:', domains);
     
-    const prompt = `You are a domain analysis expert. Analyze these domains for business potential and rank them from best to worst.
+    // Shorter, more focused prompt to reduce processing time
+    const prompt = `Analyze these domains for business potential. Score each 0-100 and identify the best one.
 
-Domains to analyze: ${domains.join(', ')}
+Domains: ${domains.join(', ')}
 
-For each domain, consider:
-1. Brandability (memorable, easy to spell, sounds professional)
-2. SEO potential (keyword relevance, domain authority potential)
-3. Market appeal (broad vs niche appeal, trendy keywords)
-4. Business versatility (can support multiple business models)
-5. Global appeal (pronunciation, cultural considerations)
-6. Commercial value (premium-ness, investment potential)
-
-Provide a detailed analysis with scores (0-100) for each domain and rank them. Return as JSON:
+Consider: brandability, SEO potential, market appeal. Return JSON only:
 
 {
   "rankings": [
-    {
-      "domain": "example.com",
-      "overallScore": 85,
-      "brandability": 90,
-      "seoValue": 80,
-      "marketAppeal": 88,
-      "versatility": 85,
-      "globalAppeal": 82,
-      "commercialValue": 87,
-      "strengths": ["Memorable", "Professional sound"],
-      "weaknesses": ["Could be seen as generic"],
-      "businessSuggestions": ["Tech startup", "E-commerce platform"],
-      "reasoning": "Strong all-around domain with excellent brandability..."
-    }
+    {"domain": "example.com", "overallScore": 85, "brandability": 90, "seoValue": 80, "marketAppeal": 88, "strengths": ["Short"], "reasoning": "Brief analysis"}
   ],
-  "bestDomain": "example.com",
-  "summary": "Overall analysis summary..."
-}
+  "bestDomain": "example.com"
+}`;
 
-Only return valid JSON, no other text.`;
+    // Use faster model and shorter timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional domain analyst with expertise in branding, SEO, and business strategy. Always respond with valid JSON only."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000
-    });
-
-    const content = response.choices[0].message.content.trim();
-    console.log('🤖 AI analysis response received');
-    
     try {
-      return JSON.parse(content);
-    } catch (parseError) {
-      console.error('❌ Failed to parse AI response:', parseError);
-      console.log('Raw response:', content);
-      return null;
+      const response = await openaiClient.chat.completions.create({
+        model: "gpt-3.5-turbo", // Faster than GPT-4
+        messages: [
+          {
+            role: "system",
+            content: "You are a domain analyst. Always return valid JSON only, no other text."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.3, // Lower temperature for faster, more consistent responses
+        max_tokens: 1000 // Reduced token limit
+      }, {
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      
+      const content = response.choices[0].message.content.trim();
+      console.log('🤖 AI analysis response received');
+      
+      // Clean up response - remove any markdown formatting
+      const jsonContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      
+      try {
+        return JSON.parse(jsonContent);
+      } catch (parseError) {
+        console.error('❌ Failed to parse AI response:', parseError);
+        console.log('Raw response:', content);
+        return null;
+      }
+    } catch (requestError) {
+      clearTimeout(timeoutId);
+      throw requestError;
     }
     
   } catch (error) {
-    console.error('❌ AI analysis failed:', error);
+    if (error.name === 'AbortError') {
+      console.error('❌ AI analysis timed out');
+    } else {
+      console.error('❌ AI analysis failed:', error);
+    }
     return null;
   }
 }
@@ -139,9 +160,18 @@ export default async function handler(req, res) {
       });
     }
 
+    // Limit domain count to prevent timeouts
+    if (domains.length > 20) {
+      return res.status(400).json({
+        error: 'Too many domains to analyze at once. Please limit to 20 domains maximum.',
+        maxAllowed: 20,
+        provided: domains.length
+      });
+    }
+
     console.log(`🔍 Analyzing ${domains.length} domains:`, domains);
 
-    // Get AI-powered analysis first
+    // Get AI-powered analysis first (only for smaller batches)
     const aiAnalysis = await analyzeDomainWithLLM(domains);
 
     // Proper domain analysis implementation
@@ -346,6 +376,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
+      analysis: analysis, // Keep this for frontend compatibility
       data: analysis,
       id: savedAnalysis?.id || analysisId,
       timestamp: new Date().toISOString()
@@ -353,10 +384,20 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Analysis failed:', error);
-    return res.status(500).json({ 
-      error: 'Analysis failed', 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    
+    // Ensure we always return valid JSON
+    const errorResponse = {
+      success: false,
+      error: 'Analysis failed',
+      message: error.message || 'Unknown error occurred',
+      timestamp: new Date().toISOString()
+    };
+
+    // Add stack trace only in development
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse.stack = error.stack;
+    }
+
+    return res.status(500).json(errorResponse);
   }
 }

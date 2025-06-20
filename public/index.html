@@ -666,10 +666,10 @@
                                 <textarea 
                                     id="domains" 
                                     name="domains" 
-                                    placeholder="Enter domain names, one per line&#10;&#10;Example:&#10;techstartup.com&#10;innovatehub.io&#10;nextgenapp.ai"
+                                    placeholder="Enter domain names, one per line (max 20 domains)&#10;&#10;Example:&#10;techstartup.com&#10;innovatehub.io&#10;nextgenapp.ai&#10;myawesomeapp.com&#10;businesshub.co"
                                     required
                                 ></textarea>
-                                <p style="font-size: 14px; color: #666; margin-top: 5px;">Enter one domain per line. We'll analyze each domain and recommend the best one.</p>
+                                <p style="font-size: 14px; color: #666; margin-top: 5px;">Enter one domain per line (maximum 20). For best results with AI analysis, use 10 or fewer domains.</p>
                             </div>
                             
                             <button type="submit" class="btn" id="analyzeBtn">Analyze Domains</button>
@@ -1192,6 +1192,17 @@
                         return;
                     }
 
+                    if (domains.length > 20) {
+                        alert(`Too many domains! Please limit to 20 domains maximum. You entered ${domains.length} domains.`);
+                        return;
+                    }
+
+                    if (domains.length > 10) {
+                        if (!confirm(`You're analyzing ${domains.length} domains. This may take longer and will use basic analysis instead of AI. Continue?`)) {
+                            return;
+                        }
+                    }
+
                     const statusEl = document.getElementById('status');
                     const statusText = document.getElementById('statusText');
                     const analyzeBtn = document.getElementById('analyzeBtn');
@@ -1210,7 +1221,23 @@
                             body: JSON.stringify({ domains })
                         });
 
-                        const data = await response.json();
+                        // Check if response is ok
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('Server error:', response.status, errorText);
+                            throw new Error(`Server error ${response.status}: ${response.statusText}`);
+                        }
+
+                        // Try to parse JSON response
+                        let data;
+                        try {
+                            const responseText = await response.text();
+                            console.log('Raw response:', responseText);
+                            data = JSON.parse(responseText);
+                        } catch (parseError) {
+                            console.error('JSON parse error:', parseError);
+                            throw new Error('Invalid response from server. Please try again.');
+                        }
                         
                         if (data.success) {
                             statusText.textContent = 'Analysis complete! Proceeding to website generation...';
@@ -1229,7 +1256,15 @@
 
                     } catch (error) {
                         console.error('Analysis error:', error);
-                        statusText.textContent = 'Analysis failed. Please try again.';
+                        let errorMessage = 'Analysis failed. Please try again.';
+                        
+                        if (error.message.includes('504') || error.message.includes('timeout')) {
+                            errorMessage = 'Analysis timed out. Try with fewer domains or try again later.';
+                        } else if (error.message.includes('Invalid response')) {
+                            errorMessage = 'Server returned invalid response. Please try again.';
+                        }
+                        
+                        statusText.textContent = errorMessage;
                         statusEl.classList.add('error');
                     } finally {
                         analyzeBtn.disabled = false;
