@@ -34,11 +34,15 @@ async function analyzeDomainWithLLM(domains) {
     return null;
   }
 
-  // Skip AI analysis for large batches to avoid timeout
+  // Skip AI analysis for very large batches to avoid timeout
   if (domains.length > 10) {
     console.log(`⚠️ Skipping AI analysis for ${domains.length} domains (too many for timeout limits)`);
     return null;
   }
+  
+  // Use faster model for larger batches
+  const model = domains.length > 5 ? "gpt-3.5-turbo" : "gpt-4.1-2025-04-14";
+  console.log(`🤖 Using ${model} for ${domains.length} domains`);
 
   try {
     console.log('🤖 Using AI to analyze domains:', domains);
@@ -78,13 +82,13 @@ Return only valid JSON:
   }
 }`;
 
-    // Use faster model and shorter timeout
+    // Use faster model with extended timeout for multiple domains
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
 
     try {
       const response = await openaiClient.chat.completions.create({
-        model: "gpt-4.1-2025-04-14", // Latest GPT-4 model
+        model: model, // Dynamic model selection based on batch size
         messages: [
           {
             role: "system",
@@ -155,10 +159,10 @@ Return only valid JSON:
     }
     
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error('❌ AI analysis timed out');
+    if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+      console.error('❌ AI analysis timed out after 45 seconds - falling back to basic analysis');
     } else {
-      console.error('❌ AI analysis failed:', error);
+      console.error('❌ AI analysis failed:', error.message || error);
     }
     return null;
   }
