@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "domain-analyzer",
   "functions": {
     "api/**/*.js": {
       "maxDuration": 60
@@ -12,12 +11,12 @@
       "destination": "/api/progress"
     },
     {
-      "source": "/sites/([^/]+)/(.*)",
-      "destination": "/api/serve-site?slug=$1&file=$2"
+      "source": "/sites/:slug/:file",
+      "destination": "/api/serve-site?slug=:slug&file=:file"
     },
     {
-      "source": "/sites/([^/]+)/?",
-      "destination": "/api/serve-site?slug=$1"
+      "source": "/sites/:slug",
+      "destination": "/api/serve-site?slug=:slug"
     },
     {
       "source": "/app",
