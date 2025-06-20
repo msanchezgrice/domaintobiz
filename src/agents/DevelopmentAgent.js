@@ -78,10 +78,7 @@ export class DevelopmentAgent {
 
   async buildWebsite(config) {
     const files = {
-      'index.html': await this.generateHTML(config),
-      'styles.css': await this.generateCSS(config),
-      'script.js': await this.generateJS(config),
-      'manifest.json': this.generateManifest(config)
+      'index.html': await this.generateHTML(config)
     };
     
     return { files };
@@ -89,6 +86,8 @@ export class DevelopmentAgent {
 
   async generateHTML(config) {
     const { content, design, wireframes } = config;
+    const css = await this.generateCSS(config);
+    const js = await this.generateJS(config);
     
     return `<!DOCTYPE html>
 <html lang="en">
@@ -109,13 +108,14 @@ export class DevelopmentAgent {
     <meta name="twitter:title" content="${content.metadata.twitter?.title || content.metadata.title}">
     <meta name="twitter:description" content="${content.metadata.twitter?.description || content.metadata.description}">
     
-    <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
-    
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+${css}
+    </style>
 </head>
 <body>
     ${this.generateNavigation(content)}
@@ -132,7 +132,9 @@ export class DevelopmentAgent {
     
     ${this.generateSignupModal(content.forms.signup)}
     
-    <script src="script.js"></script>
+    <script>
+${js}
+    </script>
 </body>
 </html>`;
   }
@@ -783,43 +785,57 @@ ${baseCSS}
 
 /* Navigation */
 .navbar {
-    background-color: var(--color-background);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background: white;
+    box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .nav-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-md) 0;
+    padding: var(--space-4) 0;
 }
 
 .nav-logo {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-extrabold);
     color: var(--color-primary);
     text-decoration: none;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: var(--space-lg);
+    gap: var(--space-8);
     align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu li {
+    list-style: none;
 }
 
 .nav-menu a {
     color: var(--color-text);
     text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s;
+    font-weight: var(--font-weight-medium);
+    transition: all 0.3s ease;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
 }
 
 .nav-menu a:hover {
     color: var(--color-primary);
+    background: var(--color-background-alt);
 }
 
 .nav-toggle {
@@ -828,6 +844,7 @@ ${baseCSS}
     background: none;
     border: none;
     cursor: pointer;
+    padding: var(--space-2);
 }
 
 .nav-toggle span {
@@ -836,67 +853,128 @@ ${baseCSS}
     background-color: var(--color-text);
     margin: 3px 0;
     transition: 0.3s;
+    border-radius: 2px;
 }
 
-/* Hero Section */
+/* Enhanced Hero Section */
 .hero {
-    padding: var(--space-xl) 0;
-    background: linear-gradient(135deg, var(--color-background) 0%, rgba(var(--color-primary-rgb), 0.05) 100%);
+    padding: var(--space-24) 0;
+    background: var(--gradient-primary);
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
 }
 
 .hero-content {
-    max-width: 600px;
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .hero-headline {
-    font-size: var(--font-size-h1);
-    font-weight: 700;
-    margin-bottom: var(--space-md);
-    line-height: 1.2;
+    font-size: var(--font-size-6xl);
+    font-weight: var(--font-weight-extrabold);
+    margin-bottom: var(--space-6);
+    line-height: 1.1;
+    background: linear-gradient(45deg, #fff, #f0f9ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .hero-subheadline {
-    font-size: 1.25rem;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-lg);
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-8);
+    opacity: 0.9;
+    line-height: 1.6;
 }
 
 .hero-cta {
     display: flex;
-    gap: var(--space-md);
+    gap: var(--space-4);
+    justify-content: center;
     flex-wrap: wrap;
 }
 
-/* Features Section */
+.hero-visual {
+    margin-top: var(--space-12);
+}
+
+.hero-visual img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-2xl);
+}
+
+/* Enhanced Features Section */
 .features {
-    padding: var(--space-xl) 0;
+    padding: var(--space-24) 0;
+    background: var(--color-background-alt);
 }
 
 .section-header {
     text-align: center;
-    margin-bottom: var(--space-xl);
+    margin-bottom: var(--space-16);
 }
 
 .section-title {
-    font-size: var(--font-size-h2);
-    font-weight: 700;
-    margin-bottom: var(--space-sm);
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-extrabold);
+    margin-bottom: var(--space-4);
+    color: var(--color-text);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .section-subtitle {
-    font-size: 1.125rem;
+    font-size: var(--font-size-xl);
     color: var(--color-text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-8);
 }
 
 .feature-card {
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--color-border);
     text-align: center;
-    padding: var(--space-lg);
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-2xl);
+    border-color: var(--color-primary);
+}
 }
 
 .feature-icon {
