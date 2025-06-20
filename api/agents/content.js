@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { domain, strategy, designSystem, executionId, regenerate, userComments, projectId } = parsedBody;
+    const { domain, strategy, domainAnalysis, designSystem, executionId, regenerate, userComments, projectId } = parsedBody;
 
     if (!domain || !strategy) {
       return res.status(400).json({ 
@@ -55,20 +55,30 @@ export default async function handler(req, res) {
     
     try {
       if (!process.env.OPENAI_API_KEY) {
-        console.log('⚠️ No OpenAI API key - using mock content');
+        console.log('⚠️ No OpenAI API key - using strategy-based content');
+        
+        const aiInsights = domainAnalysis?.aiInsights;
+        const businessConcept = aiInsights?.businessConcept || strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning;
+        const valueProposition = aiInsights?.valueProposition || strategy.businessModel?.valueProposition;
+        
+        if (!businessConcept || !valueProposition) {
+          throw new Error('Missing OpenAI API key AND insufficient strategy data for content generation');
+        }
+        
         websiteContent = {
           status: 'completed',
+          no_ai: true,
           hero: {
-            headline: `Welcome to ${domain}`,
-            subheadline: strategy.brandStrategy.positioning,
+            headline: businessConcept,
+            subheadline: valueProposition,
             cta: {
               primary: { text: 'Get Started', link: '#signup' },
               secondary: { text: 'Learn More', link: '#features' }
             }
           },
-          sections: strategy.mvpScope.features.map(feature => ({
-            title: feature,
-            content: `Content for ${feature}`,
+          sections: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || []).map(feature => ({
+            title: typeof feature === 'object' ? feature.name || feature.title : feature,
+            content: typeof feature === 'object' ? feature.description : `${feature} designed for ${strategy.businessModel?.targetMarket}`,
             type: 'feature'
           }))
         };
@@ -83,8 +93,25 @@ export default async function handler(req, res) {
         const prompt = `
 You are an expert copywriter. Create compelling website content for a domain-specific business.
 
-DOMAIN ANALYSIS & BUSINESS CONTEXT:
+ORIGINAL DOMAIN ANALYSIS INSIGHTS:
 Domain: ${domain}
+${domainAnalysis?.aiInsights ? `
+AI DOMAIN INSIGHTS (USE THIS AS PRIMARY SOURCE):
+- Business Concept: ${domainAnalysis.aiInsights.businessConcept}
+- Founder Intent: ${domainAnalysis.aiInsights.founderIntent}
+- Value Proposition: ${domainAnalysis.aiInsights.valueProposition}
+- Target Demographic: ${domainAnalysis.aiInsights.targetDemographic}
+- Suggested Features: ${domainAnalysis.aiInsights.suggestedFeatures?.join(', ')}
+- Brand Personality: ${domainAnalysis.aiInsights.brandPersonality}
+- Industry Fit: ${domainAnalysis.aiInsights.industryFit}
+- Business Potential: ${domainAnalysis.aiInsights.businessPotential}
+- Key Strengths: ${domainAnalysis.aiInsights.strengths?.join(', ')}
+- AI Reasoning: ${domainAnalysis.aiInsights.reasoning}
+
+CRITICAL: Use these AI insights as the PRIMARY source for content creation. This is what the business should actually be about.
+` : ''}
+
+BUSINESS STRATEGY (DERIVED FROM AI INSIGHTS):
 Business Concept: ${strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning || 'Business based on domain analysis'}
 Industry: ${strategy.businessModel?.industry || 'Professional Services'}
 Target Market: ${strategy.businessModel?.targetMarket || strategy.businessModel?.targetPersona || 'General audience'}
@@ -214,13 +241,25 @@ Return ONLY a valid JSON object with this structure:
       console.error('❌ Error generating content:', error);
       console.log('🔄 Using enhanced fallback content based on business strategy...');
       
-      // Create enhanced fallback content using strategy data
+      // Create content using AI INSIGHTS first, then business strategy - no generic placeholders
+      const aiInsights = domainAnalysis?.aiInsights;
+      const businessConcept = aiInsights?.businessConcept || strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning;
+      const valueProposition = aiInsights?.valueProposition || strategy.businessModel?.valueProposition;
+      const targetMarket = aiInsights?.targetDemographic || strategy.businessModel?.targetMarket;
+      const industry = aiInsights?.industryFit || strategy.businessModel?.industry;
+      const problemSolved = strategy.businessModel?.problemSolved;
+      
+      if (!businessConcept || !valueProposition) {
+        throw new Error('Missing critical business strategy data - cannot generate meaningful content without business concept and value proposition');
+      }
+      
+      // Generate domain-specific content based on actual strategy
       websiteContent = {
         status: 'completed',
-        fallback: true,
+        strategy_based: true,
         hero: {
-          headline: strategy.businessModel?.businessConcept || `${strategy.businessModel?.domainMeaning || domain} Solutions`,
-          subheadline: strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || `Professional services for ${strategy.businessModel?.targetMarket || 'your business'}`,
+          headline: businessConcept,
+          subheadline: valueProposition,
           cta: {
             primary: { text: 'Get Started', link: '#signup' },
             secondary: { text: 'Learn More', link: '#features' }
@@ -229,22 +268,22 @@ Return ONLY a valid JSON object with this structure:
         sections: [
           {
             id: 'features',
-            title: 'Our Services',
-            content: `Discover how we can help with ${strategy.businessModel?.problemSolved || 'your challenges'}`,
-            features: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || strategy.mvpScope?.features || ['Professional Services', 'Expert Consultation', 'Custom Solutions']).map(f => ({
+            title: `${industry} Solutions`,
+            content: `${problemSolved}`,
+            features: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || []).map(f => ({
               title: typeof f === 'object' ? f.name || f.title : f,
-              description: typeof f === 'object' ? f.description : `Expert ${f} tailored to your needs`,
+              description: typeof f === 'object' ? f.description : `Advanced ${f} designed for ${targetMarket}`,
               icon: 'star'
             }))
           },
           {
             id: 'about',
-            title: `About ${domain}`,
-            content: strategy.businessModel?.businessConcept || `We specialize in providing ${strategy.businessModel?.industry || 'professional'} solutions to help ${strategy.businessModel?.targetMarket || 'businesses'} achieve their goals.`
+            title: `About ${businessConcept}`,
+            content: `${businessConcept} - ${valueProposition}. We serve ${targetMarket} by ${problemSolved}.`
           }
         ],
         footer: {
-          tagline: `Your trusted partner for ${strategy.businessModel?.industry || 'professional'} solutions`,
+          tagline: valueProposition,
           links: [
             { text: 'Privacy Policy', href: '/privacy' },
             { text: 'Terms of Service', href: '/terms' }

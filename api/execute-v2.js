@@ -232,6 +232,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({ 
           domain: targetDomain, 
           strategy, 
+          domainAnalysis, // Pass the original domain analysis with AI insights
           designSystem: agentResults.design?.fallback || agentResults.design,
           executionId,
           regenerate,
@@ -267,13 +268,24 @@ export default async function handler(req, res) {
       
     } catch (error) {
       console.error('❌ Content Agent error:', error);
+      // Create content using AI insights first, then business strategy - no generic placeholders
+      const aiInsights = domainAnalysis?.aiInsights;
+      const businessConcept = aiInsights?.businessConcept || strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning;
+      const valueProposition = aiInsights?.valueProposition || strategy.businessModel?.valueProposition;
+      const targetMarket = aiInsights?.targetDemographic || strategy.businessModel?.targetMarket;
+      
+      if (!businessConcept || !valueProposition) {
+        console.error('❌ Missing critical business data for content generation');
+        throw new Error(`Content generation failed for ${targetDomain}: Missing business concept or value proposition`);
+      }
+      
       agentResults.content = {
-        status: 'error',
+        status: 'error_with_fallback',
         error: error.message,
         fallback: {
           hero: {
-            headline: `Welcome to ${targetDomain}`,
-            subheadline: strategy.brandStrategy?.positioning || 'Your business solution',
+            headline: businessConcept,
+            subheadline: valueProposition,
             cta: {
               primary: { text: 'Get Started', link: '#signup' },
               secondary: { text: 'Learn More', link: '#features' }
@@ -281,13 +293,13 @@ export default async function handler(req, res) {
           },
           sections: [
             {
-              title: 'Features',
-              content: 'Discover what makes us different',
-              features: strategy.mvpScope?.features?.map(f => ({
-                title: f,
-                description: `Learn more about ${f}`,
+              title: `${strategy.businessModel?.industry || 'Our'} Solutions`,
+              content: strategy.businessModel?.problemSolved || 'Discover our comprehensive solutions',
+              features: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || []).map(f => ({
+                title: typeof f === 'object' ? f.name || f.title : f,
+                description: typeof f === 'object' ? f.description : `${f} designed for ${targetMarket}`,
                 icon: 'star'
-              })) || []
+              }))
             }
           ]
         }

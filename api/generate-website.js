@@ -196,8 +196,8 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
 
   const sections = websiteContent?.sections || {};
   const hero = sections.hero || websiteContent?.hero || {
-    headline: strategy.businessModel?.businessConcept || strategy.brandStrategy?.businessName || domain,
-    subheadline: strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || 'Transform Your Business',
+    headline: strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning || domain,
+    subheadline: strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || 'Professional solutions',
     cta: { primary: { text: 'Get Started', link: '#' }, secondary: { text: 'Learn More', link: '#features' } }
   };
   
@@ -209,20 +209,12 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
     websiteContent?.sections?.find(s => s.id === 'features')?.features ||
     (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || strategy.mvpScope?.features)?.map(f => ({
       title: typeof f === 'object' ? f.name || f.title : f,
-      description: typeof f === 'object' ? f.description : `Experience the power of ${f} for your business growth.`
+      description: typeof f === 'object' ? f.description : `${f} - designed for ${strategy.businessModel?.targetMarket || 'your business'}`
     })) || [];
 
-  const pricing = sections.pricing?.items || [
-    { title: 'Starter', price: '$29', period: '/month', description: 'Perfect for individuals getting started', features: ['Core features', 'Email support', 'Basic analytics'] },
-    { title: 'Professional', price: '$79', period: '/month', description: 'Ideal for growing businesses', features: ['All Starter features', 'Priority support', 'Advanced analytics', 'Custom integrations'], featured: true },
-    { title: 'Enterprise', price: '$199', period: '/month', description: 'For large organizations', features: ['All Professional features', 'Dedicated support', 'Custom solutions', 'SLA guarantee'] }
-  ];
-
-  const testimonials = sections.testimonials?.items || [
-    { text: 'This service has completely transformed how we operate. The results exceeded our expectations.', author: 'Sarah Johnson', role: 'CEO, Tech Innovations' },
-    { text: 'Outstanding support and incredible value. I would recommend this to anyone looking for quality solutions.', author: 'Michael Chen', role: 'Marketing Director' },
-    { text: 'The team went above and beyond to ensure our success. Truly professional and reliable service.', author: 'Emily Rodriguez', role: 'Operations Manager' }
-  ];
+  // Only use actual pricing and testimonials from content - no generic placeholders
+  const pricing = sections.pricing?.items || [];
+  const testimonials = sections.testimonials?.items || [];
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -293,8 +285,8 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">Key Features</h2>
-                <p class="section-subtitle">Discover what makes us different</p>
+                <h2 class="section-title">${sections.features?.title || `${strategy.businessModel?.industry || 'Our'} Features`}</h2>
+                <p class="section-subtitle">${sections.features?.subtitle || `Discover what makes ${strategy.businessModel?.businessConcept || 'our solution'} different`}</p>
             </div>
             <div class="features-grid">
                 ${features.map(feature => `
@@ -313,6 +305,7 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
         </div>
     </section>
         
+    ${pricing.length > 0 ? `
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
@@ -341,7 +334,9 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
             </div>
         </div>
     </section>
+    ` : ''}
         
+    ${testimonials.length > 0 ? `
     <section id="testimonials" class="testimonials">
         <div class="container">
             <div class="section-header">
@@ -366,12 +361,13 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
             </div>
         </div>
     </section>
+    ` : ''}
         
     <section class="cta-section">
         <div class="container">
             <div class="cta-content">
-                <h2 class="cta-title">${sections.cta?.title || 'Ready to Get Started?'}</h2>
-                <p class="cta-subtitle">${sections.cta?.subtitle || `Join ${domain} today and transform your business`}</p>
+                <h2 class="cta-title">${sections.cta?.title || `Ready to get started with ${strategy.businessModel?.businessConcept || domain}?`}</h2>
+                <p class="cta-subtitle">${sections.cta?.subtitle || `${strategy.businessModel?.valueProposition || `Join ${domain} today`}`}</p>
                 <button class="btn btn-primary btn-lg" data-modal="signup">Start Your Free Trial</button>
             </div>
         </div>
