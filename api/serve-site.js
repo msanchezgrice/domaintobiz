@@ -101,6 +101,8 @@ function serveWebsiteContent(res, website, file) {
 function getDefaultHTML(website) {
   const domain = website?.domain || 'Business Website';
   const businessType = website?.website_data?.strategy?.businessModel?.type || 'Business';
+  const css = getDefaultCSS();
+  const js = getDefaultJS();
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -112,8 +114,11 @@ function getDefaultHTML(website) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%236366F1'/%3E%3Ctext x='50' y='55' font-family='Arial' font-size='40' fill='white' text-anchor='middle'%3E${domain.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E">
+    
+    <style>
+${css}
+    </style>
 </head>
 <body>
     <header class="header">
@@ -346,7 +351,9 @@ function getDefaultHTML(website) {
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script>
+${js}
+    </script>
 </body>
 </html>`;
 }
