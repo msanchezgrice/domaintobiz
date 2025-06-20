@@ -28,9 +28,11 @@ export default async function handler(req, res) {
         )
       `)
       .eq('deployment_slug', slug)
-      .single();
+      .maybeSingle();
 
     if (deploymentError || !deployment) {
+      console.log(`Deployment not found for slug: ${slug}, trying fallback...`);
+      
       // Fallback: try to find by deployment_url containing the slug
       // Handle both direct slug match and domain-based matching
       const domainFromSlug = slug.replace(/-\d+$/, '').replace(/-/g, '.');
@@ -40,10 +42,20 @@ export default async function handler(req, res) {
         .select('*')
         .or(`deployment_url.ilike.%${slug}%,deployment_url.ilike.%${domainFromSlug}%,domain.eq.${domainFromSlug}`)
         .eq('status', 'completed')
-        .single();
+        .maybeSingle();
 
-      if (fallbackError || !fallbackDeployment) {
-        return res.status(404).json({ error: 'Website not found' });
+      if (fallbackError) {
+        console.error('Fallback query error:', fallbackError);
+      }
+
+      if (!fallbackDeployment) {
+        console.log(`No website found for slug: ${slug}, domain: ${domainFromSlug}`);
+        // Return a default website instead of 404
+        const defaultWebsite = {
+          domain: domainFromSlug,
+          website_data: { strategy: { businessModel: { type: 'Business' } } }
+        };
+        return serveWebsiteContent(res, defaultWebsite, file);
       }
 
       // Use the fallback data
