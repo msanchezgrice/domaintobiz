@@ -331,6 +331,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             overflow: hidden;
+            border-radius: 8px 8px 0 0;
         }
         
         .project-info {
@@ -1076,9 +1077,18 @@
             const projectsHTML = projects.map(project => `
                 <div class="project-card">
                     <div class="project-preview">
-                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; font-size: 18px;">
-                            ${project.domain}
-                        </div>
+                        ${project.deploymentUrl ? `
+                            <iframe 
+                                src="${project.deploymentUrl}" 
+                                style="width: 100%; height: 100%; border: none; border-radius: 8px 8px 0 0; pointer-events: none; transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%;"
+                                loading="lazy"
+                                title="Website preview for ${project.domain}"
+                            ></iframe>
+                        ` : `
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; font-size: 18px; background: linear-gradient(135deg, #5730ec, #8b5cf6);">
+                                ${project.domain}
+                            </div>
+                        `}
                     </div>
                     <div class="project-info">
                         <div class="project-domain">${project.domain}</div>

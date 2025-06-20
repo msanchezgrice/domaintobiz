@@ -319,6 +319,126 @@
             font-size: 14px;
         }
         
+        /* Custom Dialog Styles */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .dialog.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .dialog-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .dialog-content {
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .dialog-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .dialog-input:focus {
+            outline: none;
+            border-color: #5730ec;
+        }
+
+        .dialog-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .dialog-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dialog-btn-primary {
+            background: #5730ec;
+            color: white;
+        }
+
+        .dialog-btn-primary:hover {
+            background: #4520dc;
+        }
+
+        .dialog-btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .dialog-btn-secondary:hover {
+            background: #e5e5e5;
+        }
+
+        .dialog-btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .dialog-btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .dialog-success {
+            border-left: 4px solid #10b981;
+            background: #f0fdfa;
+        }
+
+        .dialog-warning {
+            border-left: 4px solid #f59e0b;
+            background: #fefbf3;
+        }
+
+        .dialog-error {
+            border-left: 4px solid #ef4444;
+            background: #fef5f5;
+        }
+
         @media (max-width: 768px) {
             .content-grid {
                 grid-template-columns: 1fr;
@@ -331,6 +451,11 @@
             .btn {
                 width: 100%;
                 text-align: center;
+            }
+
+            .dialog {
+                margin: 20px;
+                width: calc(100% - 40px);
             }
         }
     </style>
@@ -410,8 +535,9 @@
             // Extract business data
             const businessData = project.business_data || {};
             const strategy = businessData.strategy || {};
+            const businessModel = strategy.businessModel || {};
             const brandStrategy = strategy.brandStrategy || {};
-            const mvpScope = strategy.mvpScope || {};
+            const mvpScope = strategy.mvpScope || strategy.mvpPlan || {};
 
             // Build the HTML
             content.innerHTML = `
@@ -462,16 +588,24 @@
                         <div class="info-card">
                             <h3>Business Strategy</h3>
                             <div class="info-item">
-                                <span class="info-label">Positioning</span>
-                                <span class="info-value">${brandStrategy.positioning || 'Not defined'}</span>
+                                <span class="info-label">Business Concept</span>
+                                <span class="info-value">${businessModel.businessConcept || businessModel.domainMeaning || 'Not defined'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Target Market</span>
-                                <span class="info-value">${strategy.targetMarket || 'Not defined'}</span>
+                                <span class="info-value">${businessModel.targetMarket || businessModel.targetPersona || 'Not defined'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Value Proposition</span>
-                                <span class="info-value">${brandStrategy.uniqueSellingProposition || 'Not defined'}</span>
+                                <span class="info-value">${businessModel.valueProposition || brandStrategy.positioning || 'Not defined'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Revenue Model</span>
+                                <span class="info-value">${businessModel.revenueModel || 'Not defined'}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Industry</span>
+                                <span class="info-value">${businessModel.industry || 'Not defined'}</span>
                             </div>
                         </div>
 
@@ -533,40 +667,175 @@
             `;
         }
 
+        // Dialog utility functions
+        function showDialog(title, content, actions, type = '') {
+            const overlay = document.createElement('div');
+            overlay.className = 'dialog-overlay';
+            
+            const dialog = document.createElement('div');
+            dialog.className = `dialog ${type}`;
+            
+            dialog.innerHTML = `
+                <div class="dialog-title">${title}</div>
+                <div class="dialog-content">${content}</div>
+                <div class="dialog-actions">${actions}</div>
+            `;
+            
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            
+            // Show with animation
+            setTimeout(() => dialog.classList.add('show'), 10);
+            
+            return overlay;
+        }
+
+        function closeDialog(overlay) {
+            const dialog = overlay.querySelector('.dialog');
+            dialog.classList.remove('show');
+            setTimeout(() => document.body.removeChild(overlay), 300);
+        }
+
         function editProject(projectId) {
-            // Redirect to edit page (to be implemented)
-            alert('Edit functionality coming soon!');
+            showDialog(
+                'Edit Content',
+                'Content editing functionality is coming soon! We are exploring the best tools for visual website editing.',
+                '<button class="dialog-btn dialog-btn-primary" onclick="closeDialog(this.closest(\'.dialog-overlay\'))">OK</button>'
+            );
         }
 
         function regenerateProject(projectId) {
-            if (confirm('Are you sure you want to regenerate this website? This will create a new version.')) {
-                // Implement regeneration logic
-                alert('Regeneration functionality coming soon!');
+            const content = `
+                <p>Regenerate this website with improvements and refinements.</p>
+                <p>Add any specific comments or requests for changes:</p>
+                <textarea 
+                    class="dialog-input" 
+                    id="regenerateComments" 
+                    placeholder="Optional: Add comments about what you'd like to improve or change..."
+                ></textarea>
+            `;
+            
+            const actions = `
+                <button class="dialog-btn dialog-btn-secondary" onclick="closeDialog(this.closest('.dialog-overlay'))">Cancel</button>
+                <button class="dialog-btn dialog-btn-primary" onclick="executeRegenerate('${projectId}')">Regenerate Website</button>
+            `;
+            
+            showDialog('Regenerate Website', content, actions, 'dialog-warning');
+        }
+
+        async function executeRegenerate(projectId) {
+            const comments = document.getElementById('regenerateComments')?.value || '';
+            const overlay = document.querySelector('.dialog-overlay');
+            
+            try {
+                // Close the dialog
+                closeDialog(overlay);
+                
+                // Show loading dialog
+                const loadingOverlay = showDialog(
+                    'Regenerating Website',
+                    '<p>Regenerating your website with improvements... This may take a few minutes.</p>',
+                    '',
+                    'dialog-success'
+                );
+                
+                const response = await fetch('/api/execute-v2', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        domain: window.location.search.split('domain=')[1]?.split('&')[0] || '',
+                        regenerate: true,
+                        comments: comments,
+                        projectId: projectId
+                    })
+                });
+
+                if (response.ok) {
+                    closeDialog(loadingOverlay);
+                    showDialog(
+                        'Regeneration Complete',
+                        'Your website has been successfully regenerated with improvements!',
+                        '<button class="dialog-btn dialog-btn-primary" onclick="window.location.reload()">View Updated Site</button>',
+                        'dialog-success'
+                    );
+                } else {
+                    const error = await response.json();
+                    closeDialog(loadingOverlay);
+                    showDialog(
+                        'Regeneration Failed',
+                        `Failed to regenerate: ${error.error || error.message || 'Unknown error'}`,
+                        '<button class="dialog-btn dialog-btn-primary" onclick="closeDialog(this.closest(\'.dialog-overlay\'))">OK</button>',
+                        'dialog-error'
+                    );
+                }
+            } catch (error) {
+                console.error('Regeneration error:', error);
+                if (document.querySelector('.dialog-overlay')) {
+                    closeDialog(document.querySelector('.dialog-overlay'));
+                }
+                showDialog(
+                    'Regeneration Failed',
+                    'An error occurred during regeneration. Please try again.',
+                    '<button class="dialog-btn dialog-btn-primary" onclick="closeDialog(this.closest(\'.dialog-overlay\'))">OK</button>',
+                    'dialog-error'
+                );
             }
         }
 
         async function deleteProject(projectId) {
-            if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-                try {
-                    const response = await fetch(`/api/projects`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ id: projectId })
-                    });
+            const actions = `
+                <button class="dialog-btn dialog-btn-secondary" onclick="closeDialog(this.closest('.dialog-overlay'))">Cancel</button>
+                <button class="dialog-btn dialog-btn-danger" onclick="executeDelete('${projectId}')">Delete Project</button>
+            `;
+            
+            showDialog(
+                'Delete Project',
+                'Are you sure you want to delete this project? This action cannot be undone and will remove all project data.',
+                actions,
+                'dialog-error'
+            );
+        }
 
-                    if (response.ok) {
-                        alert('Project deleted successfully');
-                        window.location.href = '/projects.html';
-                    } else {
-                        const error = await response.json();
-                        alert('Failed to delete project: ' + error.message);
-                    }
-                } catch (error) {
-                    console.error('Delete error:', error);
-                    alert('Failed to delete project');
+        async function executeDelete(projectId) {
+            const overlay = document.querySelector('.dialog-overlay');
+            
+            try {
+                closeDialog(overlay);
+                
+                const response = await fetch(`/api/projects`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: projectId })
+                });
+
+                if (response.ok) {
+                    showDialog(
+                        'Project Deleted',
+                        'Project has been successfully deleted.',
+                        '<button class="dialog-btn dialog-btn-primary" onclick="window.location.href=\'/#projects\'">Back to Projects</button>',
+                        'dialog-success'
+                    );
+                } else {
+                    const error = await response.json();
+                    showDialog(
+                        'Delete Failed',
+                        `Failed to delete project: ${error.error || error.message || 'Unknown error'}`,
+                        '<button class="dialog-btn dialog-btn-primary" onclick="closeDialog(this.closest(\'.dialog-overlay\'))">OK</button>',
+                        'dialog-error'
+                    );
                 }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showDialog(
+                    'Delete Failed',
+                    'An error occurred while deleting the project. Please try again.',
+                    '<button class="dialog-btn dialog-btn-primary" onclick="closeDialog(this.closest(\'.dialog-overlay\'))">OK</button>',
+                    'dialog-error'
+                );
             }
         }
     </script>

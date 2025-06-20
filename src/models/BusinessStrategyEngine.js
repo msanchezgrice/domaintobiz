@@ -76,7 +76,9 @@ export class BusinessStrategyEngine {
       existingContent: domainAnalysis.crawlData?.content || null,
       seoMetrics: domainAnalysis.crawlData?.seo || null,
       score: domainAnalysis.score,
-      breakdown: domainAnalysis.breakdown
+      breakdown: domainAnalysis.breakdown,
+      // Enhanced domain insights from AI analysis
+      aiInsights: domainAnalysis.aiInsights || null
     };
   }
 
@@ -84,24 +86,38 @@ export class BusinessStrategyEngine {
     const prompt = `
     You are an expert business strategist. Analyze the domain "${context.domain}" and create a comprehensive business model.
     
-    CRITICAL: First deeply analyze the domain name semantics and meaning:
-    
-    Domain Name Analysis:
+    Domain Analysis Data:
     - Domain: ${context.domain}
     - Core name: "${context.domainName}"
     - Extension: .${context.extension}
     - Existing site: ${context.hasExistingSite}
     - Score: ${context.score}/100
     
-    Step 1: Semantic Analysis
+    ${context.aiInsights ? `
+    ENHANCED DOMAIN INSIGHTS (use this to guide your business model):
+    - Business Concept: ${context.aiInsights.businessConcept}
+    - Founder Intent: ${context.aiInsights.founderIntent}
+    - Value Proposition: ${context.aiInsights.valueProposition}
+    - Target Demographic: ${context.aiInsights.targetDemographic}
+    - Suggested Features: ${context.aiInsights.suggestedFeatures?.join(', ')}
+    - Brand Personality: ${context.aiInsights.brandPersonality}
+    - Industry Fit: ${context.aiInsights.industryFit}
+    - Business Potential: ${context.aiInsights.businessPotential}
+    
+    IMPORTANT: Use these insights as the foundation for your business model. The AI has already analyzed what the founder was likely thinking when choosing this domain name.
+    ` : `
+    Step 1: Semantic Analysis (since no AI insights available)
     - What does "${context.domainName}" mean literally?
     - What questions, concerns, or topics does this domain name address?
     - What industry/niche does this domain naturally fit into?
     - What target audience would be interested in this domain name?
     - What problems or pain points does this domain name suggest?
+    `}
     
     Step 2: Business Model Design
-    Based on your semantic analysis, design a business that perfectly matches the domain meaning:
+    ${context.aiInsights ? 
+      'Based on the AI insights above, create a business model that perfectly matches the analyzed founder intent:' : 
+      'Based on your semantic analysis, design a business that perfectly matches the domain meaning:'}
     
     1. Business Concept: What specific business should this domain represent?
     2. Industry Classification: Primary and secondary industries

@@ -43,18 +43,49 @@ async function analyzeDomainWithLLM(domains) {
   try {
     console.log('🤖 Using AI to analyze domains:', domains);
     
-    // Shorter, more focused prompt to reduce processing time
-    const prompt = `Analyze these domains for business potential. Score each 0-100 and identify the best one.
+    // Enhanced prompt to analyze founder intent and business concept
+    const prompt = `You are a domain analyst and business strategist. For each domain, analyze the domain name and make your best guess as to what the founder was thinking in terms of:
 
-Domains: ${domains.join(', ')}
+1. BUSINESS CONCEPT: What product/service does this domain suggest?
+2. FOUNDER INTENT: What was the founder trying to communicate?
+3. VALUE PROPOSITION: What value would this business provide?
+4. TARGET DEMOGRAPHIC: Who would be interested in this?
+5. FEATURE SET: What features/services would this offer?
+6. BRAND PERSONALITY: What type of brand does this suggest?
 
-Consider: brandability, SEO potential, market appeal. Return JSON only:
+Domains to analyze: ${domains.join(', ')}
+
+For each domain, deeply analyze the name semantics, word combinations, implications, and likely business intent. Then score each domain 0-100 considering brandability, business potential, SEO value, and market appeal.
+
+Return JSON only:
 
 {
   "rankings": [
-    {"domain": "example.com", "overallScore": 85, "brandability": 90, "seoValue": 80, "marketAppeal": 88, "strengths": ["Short"], "reasoning": "Brief analysis"}
+    {
+      "domain": "example.com",
+      "overallScore": 85,
+      "brandability": 90,
+      "seoValue": 80,
+      "marketAppeal": 88,
+      "businessConcept": "What business this domain suggests",
+      "founderIntent": "What the founder was likely thinking",
+      "valueProposition": "What value this business would provide",
+      "targetDemographic": "Who this would serve",
+      "suggestedFeatures": ["feature1", "feature2", "feature3"],
+      "brandPersonality": "Professional/Fun/Innovative etc",
+      "industryFit": "Primary industry this fits",
+      "strengths": ["Short", "Memorable"],
+      "businessPotential": "High/Medium/Low",
+      "reasoning": "Brief analysis of why this domain works for this business"
+    }
   ],
-  "bestDomain": "example.com"
+  "bestDomain": "example.com",
+  "recommendation": {
+    "domain": "best domain",
+    "businessConcept": "recommended business concept",
+    "whyBest": "2-3 reasons why this is the best choice",
+    "marketOpportunity": "market opportunity explanation"
+  }
 }`;
 
     // Use faster model and shorter timeout
@@ -287,17 +318,20 @@ export default async function handler(req, res) {
           // Add AI insights if available
           ...(aiDomainData && {
             aiInsights: {
+              businessConcept: aiDomainData.businessConcept || '',
+              founderIntent: aiDomainData.founderIntent || '',
+              valueProposition: aiDomainData.valueProposition || '',
+              targetDemographic: aiDomainData.targetDemographic || '',
+              suggestedFeatures: aiDomainData.suggestedFeatures || [],
+              brandPersonality: aiDomainData.brandPersonality || '',
+              industryFit: aiDomainData.industryFit || '',
+              businessPotential: aiDomainData.businessPotential || '',
               strengths: aiDomainData.strengths || [],
-              weaknesses: aiDomainData.weaknesses || [],
-              businessSuggestions: aiDomainData.businessSuggestions || [],
               reasoning: aiDomainData.reasoning || '',
               detailedScores: {
                 brandability: aiDomainData.brandability,
                 seoValue: aiDomainData.seoValue,
-                marketAppeal: aiDomainData.marketAppeal,
-                versatility: aiDomainData.versatility,
-                globalAppeal: aiDomainData.globalAppeal,
-                commercialValue: aiDomainData.commercialValue
+                marketAppeal: aiDomainData.marketAppeal
               }
             }
           }),

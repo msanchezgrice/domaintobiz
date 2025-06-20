@@ -40,25 +40,38 @@ export default async function handler(req, res) {
       });
     }
 
-    const { domains, bestDomainData } = parsedBody;
+    const { domains, bestDomainData, regenerate, comments, projectId, domain } = parsedBody;
 
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    // Support both old format (domains array) and new format (single domain for regenerate)
+    const targetDomainsArray = domains || (domain ? [domain] : null);
+    
+    if (!targetDomainsArray || !Array.isArray(targetDomainsArray) || targetDomainsArray.length === 0) {
       return res.status(400).json({ 
-        error: 'Please provide an array of domains' 
+        error: 'Please provide an array of domains or a single domain' 
       });
     }
     
-    console.log('📥 Received execute request:', { domains, hasBestDomainData: !!bestDomainData });
+    console.log('📥 Received execute request:', { 
+      domains: targetDomainsArray, 
+      hasBestDomainData: !!bestDomainData,
+      isRegenerate: !!regenerate,
+      hasComments: !!comments,
+      projectId
+    });
 
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const targetDomain = domains[0];
+    const targetDomain = targetDomainsArray[0];
     
     if (!targetDomain) {
       throw new Error('No domain provided for execution');
     }
     
-    console.log(`🎯 Starting full pipeline for domain: ${targetDomain}`);
+    console.log(`🎯 Starting ${regenerate ? 'regeneration' : 'full pipeline'} for domain: ${targetDomain}`);
     console.log(`🆔 Execution ID: ${executionId}`);
+    
+    if (regenerate && comments) {
+      console.log(`💬 User comments for regeneration: ${comments}`);
+    }
     
     // Initialize progress tracking
     const origin = `https://${req.headers.host}`;
@@ -98,7 +111,7 @@ export default async function handler(req, res) {
     }
 
     // Step 2: Generate business strategy
-    console.log('🤖 Generating business strategy...');
+    console.log(`🤖 ${regenerate ? 'Regenerating' : 'Generating'} business strategy...`);
     
     // Use origin from request
     const strategyResponse = await fetch(`${origin}/api/strategy`, {
@@ -106,7 +119,10 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         domainAnalysis,
-        analysisId: executionId 
+        analysisId: executionId,
+        regenerate,
+        userComments: comments,
+        projectId
       })
     });
     
@@ -217,7 +233,10 @@ export default async function handler(req, res) {
           domain: targetDomain, 
           strategy, 
           designSystem: agentResults.design?.fallback || agentResults.design,
-          executionId 
+          executionId,
+          regenerate,
+          userComments: comments,
+          projectId
         })
       });
       
@@ -300,7 +319,10 @@ export default async function handler(req, res) {
           strategy,
           designSystem: agentResults.design?.fallback || agentResults.design,
           websiteContent: agentResults.content?.fallback || agentResults.content,
-          executionId
+          executionId,
+          regenerate,
+          userComments: comments,
+          projectId
         })
       });
 
