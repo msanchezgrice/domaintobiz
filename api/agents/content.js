@@ -212,10 +212,44 @@ Return ONLY a valid JSON object with this structure:
       }
     } catch (error) {
       console.error('❌ Error generating content:', error);
+      console.log('🔄 Using enhanced fallback content based on business strategy...');
+      
+      // Create enhanced fallback content using strategy data
       websiteContent = {
-        status: 'error',
-        error: error.message,
-        fallback: true
+        status: 'completed',
+        fallback: true,
+        hero: {
+          headline: strategy.businessModel?.businessConcept || `${strategy.businessModel?.domainMeaning || domain} Solutions`,
+          subheadline: strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || `Professional services for ${strategy.businessModel?.targetMarket || 'your business'}`,
+          cta: {
+            primary: { text: 'Get Started', link: '#signup' },
+            secondary: { text: 'Learn More', link: '#features' }
+          }
+        },
+        sections: [
+          {
+            id: 'features',
+            title: 'Our Services',
+            content: `Discover how we can help with ${strategy.businessModel?.problemSolved || 'your challenges'}`,
+            features: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || strategy.mvpScope?.features || ['Professional Services', 'Expert Consultation', 'Custom Solutions']).map(f => ({
+              title: typeof f === 'object' ? f.name || f.title : f,
+              description: typeof f === 'object' ? f.description : `Expert ${f} tailored to your needs`,
+              icon: 'star'
+            }))
+          },
+          {
+            id: 'about',
+            title: `About ${domain}`,
+            content: strategy.businessModel?.businessConcept || `We specialize in providing ${strategy.businessModel?.industry || 'professional'} solutions to help ${strategy.businessModel?.targetMarket || 'businesses'} achieve their goals.`
+          }
+        ],
+        footer: {
+          tagline: `Your trusted partner for ${strategy.businessModel?.industry || 'professional'} solutions`,
+          links: [
+            { text: 'Privacy Policy', href: '/privacy' },
+            { text: 'Terms of Service', href: '/terms' }
+          ]
+        }
       };
     }
 

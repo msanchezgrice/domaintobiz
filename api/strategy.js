@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { domainAnalysis, analysisId } = parsedBody;
+    const { domainAnalysis, analysisId, regenerate, userComments, projectId } = parsedBody;
 
     if (!domainAnalysis) {
       return res.status(400).json({ 
@@ -48,172 +48,81 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log(`🚀 Generating strategy for ${domainAnalysis.domain}`);
+    console.log(`🚀 ${regenerate ? 'Regenerating' : 'Generating'} strategy for ${domainAnalysis.domain}`);
+    
+    if (regenerate && userComments) {
+      console.log(`💬 User feedback for regeneration: ${userComments}`);
+    }
 
-    // Real AI strategy generation
+    // Use the enhanced BusinessStrategyEngine
     let strategy;
     
     try {
-      if (!process.env.OPENAI_API_KEY) {
-        console.log('⚠️ No OpenAI API key - using mock strategy');
-        strategy = {
-          domain: domainAnalysis.domain,
-          businessModel: {
-            type: 'SaaS',
-            description: `Business strategy for ${domainAnalysis.domain}`
-          },
-          brandStrategy: {
-            positioning: 'Premium solution',
-            targetAudience: 'Tech-savvy professionals'
-          },
-          mvpScope: {
-            features: ['Landing page', 'Contact form', 'Basic analytics']
-          },
-          timestamp: new Date().toISOString()
+      console.log('🤖 Using BusinessStrategyEngine for strategy generation...');
+      
+      // Import the BusinessStrategyEngine
+      const { BusinessStrategyEngine } = await import('../src/models/BusinessStrategyEngine.js');
+      const strategyEngine = new BusinessStrategyEngine();
+      
+      // Generate strategy with enhanced domain analysis
+      strategy = await strategyEngine.generateStrategy(domainAnalysis);
+      
+      // Add regeneration context if provided
+      if (regenerate && userComments) {
+        strategy.regenerationContext = {
+          isRegeneration: true,
+          userFeedback: userComments,
+          projectId: projectId,
+          regeneratedAt: new Date().toISOString()
         };
-      } else {
-        console.log('🤖 Calling OpenAI for strategy generation...');
-        
-        const { OpenAI } = await import('openai');
-        const openai = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY
-        });
-
-        const prompt = `
-You are an expert business strategist. Analyze the domain "${domainAnalysis.domain}" and create a comprehensive business strategy.
-
-CRITICAL: First deeply analyze the domain name semantics and meaning:
-
-Domain Name Analysis:
-- Domain: ${domainAnalysis.domain}
-- Core meaning: Analyze what this domain name suggests about the business
-- Target market implications from the domain name
-- Brand positioning implied by the domain
-
-Create a detailed business strategy that aligns perfectly with the domain name meaning.
-
-Return ONLY a valid JSON object with this exact structure:
-{
-  "domain": "${domainAnalysis.domain}",
-  "businessModel": {
-    "type": "SaaS|E-commerce|Marketplace|Service|Media|Other",
-    "description": "Detailed business model description",
-    "revenueStreams": ["stream1", "stream2", "stream3"],
-    "targetMarket": "Specific target market description"
-  },
-  "brandStrategy": {
-    "positioning": "Brand positioning statement",
-    "uniqueValue": "Unique value proposition",
-    "targetAudience": "Detailed target audience",
-    "brandPersonality": "Brand personality description"
-  },
-  "mvpScope": {
-    "features": ["feature1", "feature2", "feature3", "feature4", "feature5"],
-    "timeline": "Development timeline estimate",
-    "budget": "Estimated budget range"
-  },
-  "marketAnalysis": {
-    "competitors": ["competitor1", "competitor2", "competitor3"],
-    "marketSize": "Market size estimate",
-    "opportunity": "Market opportunity description"
-  }
-}`;
-
-        console.log('📤 Sending prompt to OpenAI...');
-        
-        const completion = await openai.chat.completions.create({
-                          model: "gpt-4.1-2025-04-14",
-          messages: [
-            {
-              role: "system",
-              content: "You are a world-class business strategist and domain expert. Always respond with valid JSON only."
-            },
-            {
-              role: "user", 
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        });
-
-        console.log('📥 OpenAI response received');
-        const responseText = completion.choices[0].message.content;
-        console.log('🔍 Full OpenAI response:');
-        console.log('='.repeat(80));
-        console.log(responseText);
-        console.log('='.repeat(80));
-        
-        // Parse JSON response - handle markdown formatting
-        try {
-          // Clean the response text
-          let cleanedResponse = responseText.trim();
-          
-          // Remove markdown code blocks if present
-          if (cleanedResponse.startsWith('```json')) {
-            cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-          } else if (cleanedResponse.startsWith('```')) {
-            cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
-          }
-          
-          strategy = JSON.parse(cleanedResponse);
-          strategy.timestamp = new Date().toISOString();
-          
-          console.log('✅ Successfully parsed strategy from OpenAI');
-          console.log('📊 Full parsed strategy:', JSON.stringify(strategy, null, 2));
-        } catch (parseError) {
-          console.error('❌ Failed to parse OpenAI response as JSON:', parseError);
-          console.log('🔍 Raw response:', responseText);
-          console.log('🔄 Attempting to extract JSON from response...');
-          
-          // Try to extract JSON from response if wrapped in markdown
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              strategy = JSON.parse(jsonMatch[0]);
-              strategy.timestamp = new Date().toISOString();
-              console.log('✅ Successfully extracted and parsed JSON from response');
-              console.log('📊 Extracted strategy:', JSON.stringify(strategy, null, 2));
-            } catch (extractError) {
-              console.error('❌ Failed to parse extracted JSON:', extractError);
-              throw parseError;
-            }
-          } else {
-            throw parseError;
-          }
-        }
       }
+      
+      strategy.timestamp = new Date().toISOString();
+      console.log('✅ Strategy generated successfully using BusinessStrategyEngine');
+      
     } catch (error) {
-      console.error('❌ Error generating strategy:', error);
-      console.log('🔄 Falling back to mock strategy');
+      console.error('❌ Error generating strategy with BusinessStrategyEngine:', error);
+      console.log('🔄 Falling back to basic strategy');
       
       strategy = {
         domain: domainAnalysis.domain,
         businessModel: {
-          type: 'SaaS',
-          description: `Business strategy for ${domainAnalysis.domain}`,
+          domainMeaning: `Business based on ${domainAnalysis.domain}`,
+          businessConcept: `Service platform for ${domainAnalysis.domain}`,
+          type: 'Service Platform',
+          industry: 'Professional Services',
+          revenueModel: 'subscription',
           revenueStreams: ['Subscription', 'Premium features', 'Consulting'],
-          targetMarket: 'Small to medium businesses'
+          targetMarket: 'Small to medium businesses',
+          valueProposition: 'Comprehensive solution for your needs',
+          problemSolved: 'Key business challenges'
         },
         brandStrategy: {
-          positioning: 'Premium solution',
-          uniqueValue: 'Advanced automation and AI',
-          targetAudience: 'Tech-savvy professionals',
-          brandPersonality: 'Innovative and reliable'
+          positioning: 'Trusted solution provider',
+          brandPromise: 'Exceptional service delivery',
+          values: ['trust', 'expertise', 'innovation'],
+          personality: ['professional', 'reliable', 'innovative']
         },
         mvpScope: {
-          features: ['Landing page', 'User authentication', 'Core functionality', 'Analytics dashboard', 'Payment integration'],
-          timeline: '3-6 months',
-          budget: '$50k-$100k'
-        },
-        marketAnalysis: {
-          competitors: ['TBD based on research'],
-          marketSize: 'Multi-billion dollar market',
-          opportunity: 'Growing demand for AI solutions'
+          coreFeatures: [
+            { name: 'Landing Page', description: 'Professional website presence' },
+            { name: 'Contact System', description: 'Customer communication tools' },
+            { name: 'Service Showcase', description: 'Display of offerings' },
+            { name: 'Analytics', description: 'Performance tracking' }
+          ]
         },
         timestamp: new Date().toISOString(),
         fallback: true
       };
+      
+      if (regenerate && userComments) {
+        strategy.regenerationContext = {
+          isRegeneration: true,
+          userFeedback: userComments,
+          projectId: projectId,
+          regeneratedAt: new Date().toISOString()
+        };
+      }
     }
 
     // Try to store in database (but don't fail if it doesn't work)

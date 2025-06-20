@@ -1258,15 +1258,69 @@
             });
             
             if (bestDomain) {
+                // Extract AI insights for detailed recommendation
+                const aiInsights = bestDomain.aiInsights || {};
+                const businessConcept = aiInsights.businessConcept || '';
+                const valueProposition = aiInsights.valueProposition || '';
+                const targetDemo = aiInsights.targetDemographic || '';
+                const strengths = aiInsights.strengths || [];
+                const reasoning = aiInsights.reasoning || '';
+                
                 resultsHTML += `
-                    <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
-                        <h4 style="color: #2e7d32; margin-bottom: 10px;">🎯 Recommendation</h4>
-                        <p><strong>${bestDomain.domain}</strong> is your best opportunity with a score of <strong>${bestDomain.score}</strong>!</p>
-                        <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                            ${bestDomain.hasWebsite ? 
-                                'This domain has an existing website but shows potential for improvement.' : 
-                                'This domain is available and perfect for your new business venture!'}
-                        </p>
+                    <div style="background: #e8f5e9; padding: 25px; border-radius: 12px; margin-top: 20px; border-left: 4px solid #4caf50;">
+                        <h4 style="color: #2e7d32; margin-bottom: 15px; font-size: 20px;">🎯 Recommendation</h4>
+                        <div style="text-align: left;">
+                            <p style="font-size: 16px; margin-bottom: 15px;"><strong>${bestDomain.domain}</strong> is your best opportunity with a score of <strong>${bestDomain.score}</strong>!</p>
+                            
+                            ${businessConcept ? `
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: #2e7d32;">💡 Business Concept:</strong>
+                                    <p style="margin: 5px 0 0 0; color: #555;">${businessConcept}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${valueProposition ? `
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: #2e7d32;">🎯 Value Proposition:</strong>
+                                    <p style="margin: 5px 0 0 0; color: #555;">${valueProposition}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${targetDemo ? `
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: #2e7d32;">👥 Target Audience:</strong>
+                                    <p style="margin: 5px 0 0 0; color: #555;">${targetDemo}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${strengths.length > 0 ? `
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: #2e7d32;">⭐ Key Strengths:</strong>
+                                    <div style="margin: 5px 0 0 0;">
+                                        ${strengths.map(strength => `<span style="background: #4caf50; color: white; padding: 3px 8px; border-radius: 12px; margin-right: 8px; font-size: 12px; display: inline-block; margin-bottom: 4px;">${strength}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${reasoning ? `
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: #2e7d32;">🧠 AI Analysis:</strong>
+                                    <p style="margin: 5px 0 0 0; color: #555; font-style: italic;">${reasoning}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div style="margin-top: 15px; padding: 12px; background: rgba(76, 175, 80, 0.1); border-radius: 8px;">
+                                <strong style="color: #2e7d32;">📊 Why This Domain Scored Highest:</strong>
+                                <ul style="margin: 8px 0 0 20px; color: #555;">
+                                    ${bestDomain.isValid ? '<li>Valid domain structure ✅</li>' : ''}
+                                    ${!bestDomain.hasWebsite ? '<li>Domain is available for registration 🆓</li>' : '<li>Existing site shows improvement potential 📈</li>'}
+                                    ${bestDomain.domain.length <= 12 ? '<li>Short and memorable domain name 🎯</li>' : ''}
+                                    ${!bestDomain.domain.includes('-') ? '<li>No hyphens - easy to remember 💭</li>' : ''}
+                                    ${businessConcept ? '<li>Clear business concept identified by AI 🤖</li>' : ''}
+                                    ${targetDemo ? '<li>Specific target audience identified 👥</li>' : ''}
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 `;
             }

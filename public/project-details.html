@@ -745,7 +745,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        domain: window.location.search.split('domain=')[1]?.split('&')[0] || '',
+                        domain: domain || window.location.search.split('domain=')[1]?.split('&')[0]?.replace(/%20/g, ' ') || '',
                         regenerate: true,
                         comments: comments,
                         projectId: projectId
