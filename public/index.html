@@ -378,6 +378,120 @@
             text-align: center;
         }
 
+        /* Results Display Styles */
+        .results-container {
+            margin-top: 20px;
+        }
+
+        .domain-result {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #5730ec;
+        }
+
+        .domain-result.best {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+
+        .domain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .domain-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .domain-score {
+            background: #5730ec;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .domain-score.best {
+            background: #4caf50;
+        }
+
+        .domain-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5730ec;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .generate-website-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+
+        .generate-website-btn:hover {
+            background: #45a049;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
         /* Footer */
         .footer {
             background: #1e293b;
@@ -490,9 +604,10 @@
                         </div>
                     </div>
                     
-                    <div class="card">
+                    <div class="card" id="resultsCard">
                         <h3>Results will appear here</h3>
                         <p>After analysis, you'll see domain rankings, business strategies, and automated website generation.</p>
+                        <div id="analysisResults" style="display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -700,11 +815,16 @@
                                 ${project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}
                             </span>
                         </div>
-                        ${project.deploymentUrl ? `
-                            <a href="${project.deploymentUrl}" target="_blank" style="display: block; background: #4caf50; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; text-align: center; margin-top: 12px;">
-                                View Live Site
-                            </a>
-                        ` : ''}
+                        <div class="project-actions">
+                            ${project.deploymentUrl ? `
+                                <a href="${project.deploymentUrl}" target="_blank" class="btn btn-small" style="background: #4caf50; color: white;">
+                                    View Live Site
+                                </a>
+                            ` : ''}
+                            <button class="btn-secondary btn-small" onclick="viewDetails('${project.id}')">
+                                Project Details
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -736,6 +856,149 @@
         function refreshProjects() {
             updateCacheStatus('Refreshing...');
             loadProjectsFromAPI(true);
+        }
+
+        function viewDetails(projectId) {
+            const project = projectsCache.data?.projects?.find(p => p.id === projectId);
+            if (project) {
+                // Open detailed view with both id and domain for better compatibility
+                window.open(`/project-details.html?id=${projectId}&domain=${encodeURIComponent(project.domain)}`, '_blank');
+            } else {
+                alert('Project details not found. Please refresh and try again.');
+            }
+        }
+
+        function displayAnalysisResults(data) {
+            const resultsCard = document.getElementById('resultsCard');
+            const analysisResults = document.getElementById('analysisResults');
+            
+            if (!data.analysis || !data.analysis.domains) {
+                analysisResults.innerHTML = '<p>No analysis results found.</p>';
+                return;
+            }
+
+            // Hide the placeholder content
+            resultsCard.querySelector('h3').style.display = 'none';
+            resultsCard.querySelector('p').style.display = 'none';
+            
+            // Show results container
+            analysisResults.style.display = 'block';
+            
+            // Sort domains by score (highest first)
+            const domains = data.analysis.domains.sort((a, b) => (b.score || 0) - (a.score || 0));
+            const bestDomain = domains[0];
+            
+            let resultsHTML = `
+                <h3 style="color: #5730ec; margin-bottom: 20px;">📊 Domain Analysis Results</h3>
+            `;
+            
+            domains.forEach((domain, index) => {
+                const isBest = domain.domain === bestDomain.domain;
+                const scoreColor = domain.score >= 80 ? '#4caf50' : domain.score >= 60 ? '#ff9800' : '#f44336';
+                
+                resultsHTML += `
+                    <div class="domain-result ${isBest ? 'best' : ''}">
+                        <div class="domain-header">
+                            <div class="domain-name">
+                                ${domain.domain}
+                                ${isBest ? ' 🏆' : ''}
+                            </div>
+                            <div class="domain-score ${isBest ? 'best' : ''}" style="background: ${scoreColor};">
+                                Score: ${domain.score || 'N/A'}
+                            </div>
+                        </div>
+                        
+                        <div class="domain-metrics">
+                            <div class="metric">
+                                <div class="metric-value">${domain.isValid ? '✅' : '❌'}</div>
+                                <div class="metric-label">Valid Domain</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">${domain.hasWebsite ? '🌐' : '🆓'}</div>
+                                <div class="metric-label">${domain.hasWebsite ? 'Has Website' : 'Available'}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">${domain.isValid && !domain.hasWebsite ? '⭐' : '📊'}</div>
+                                <div class="metric-label">${domain.isValid && !domain.hasWebsite ? 'Opportunity' : 'Analysis'}</div>
+                            </div>
+                        </div>
+                        
+                        ${isBest ? `
+                            <button class="generate-website-btn" onclick="generateWebsite('${domain.domain}')">
+                                🚀 Generate Website for ${domain.domain}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            if (bestDomain) {
+                resultsHTML += `
+                    <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center;">
+                        <h4 style="color: #2e7d32; margin-bottom: 10px;">🎯 Recommendation</h4>
+                        <p><strong>${bestDomain.domain}</strong> is your best opportunity with a score of <strong>${bestDomain.score}</strong>!</p>
+                        <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                            ${bestDomain.hasWebsite ? 
+                                'This domain has an existing website but shows potential for improvement.' : 
+                                'This domain is available and perfect for your new business venture!'}
+                        </p>
+                    </div>
+                `;
+            }
+            
+            analysisResults.innerHTML = resultsHTML;
+        }
+
+        async function generateWebsite(domain) {
+            if (!domain) return;
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            try {
+                button.textContent = '🔄 Generating...';
+                button.disabled = true;
+                
+                const response = await fetch('/api/execute-v2', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        domains: [domain],
+                        generateWebsite: true 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    button.textContent = '✅ Website Generated!';
+                    button.style.background = '#4caf50';
+                    
+                    // Refresh projects cache to show new website
+                    setTimeout(() => {
+                        refreshProjects();
+                        switchPage('projects');
+                    }, 2000);
+                    
+                    alert(`🎉 Website generated successfully for ${domain}! Check the Projects tab.`);
+                } else {
+                    throw new Error(data.error || 'Website generation failed');
+                }
+                
+            } catch (error) {
+                console.error('Website generation error:', error);
+                button.textContent = '❌ Generation Failed';
+                button.style.background = '#f44336';
+                alert('Website generation failed. Please try again.');
+            } finally {
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.style.background = '#4caf50';
+                }, 3000);
+            }
         }
 
         // Analyzer form functionality
@@ -776,7 +1039,9 @@
                         if (data.success) {
                             statusText.textContent = 'Analysis complete! Check results below.';
                             statusEl.classList.remove('error');
-                            // Here you would display the results
+                            
+                            // Display the analysis results
+                            displayAnalysisResults(data);
                         } else {
                             throw new Error(data.error || 'Analysis failed');
                         }
