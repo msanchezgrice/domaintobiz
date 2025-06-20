@@ -449,22 +449,7 @@
             text-transform: uppercase;
         }
 
-        .generate-website-btn {
-            background: #4caf50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: background 0.3s;
-        }
 
-        .generate-website-btn:hover {
-            background: #45a049;
-        }
 
         .project-actions {
             display: flex;
@@ -1217,46 +1202,7 @@
                 <h3 style="color: #5730ec; margin-bottom: 20px;">📊 Domain Analysis Results</h3>
             `;
             
-            domains.forEach((domain, index) => {
-                const isBest = domain.domain === bestDomain.domain;
-                const scoreColor = domain.score >= 80 ? '#4caf50' : domain.score >= 60 ? '#ff9800' : '#f44336';
-                
-                resultsHTML += `
-                    <div class="domain-result ${isBest ? 'best' : ''}">
-                        <div class="domain-header">
-                            <div class="domain-name">
-                                ${domain.domain}
-                                ${isBest ? ' 🏆' : ''}
-                            </div>
-                            <div class="domain-score ${isBest ? 'best' : ''}" style="background: ${scoreColor};">
-                                Score: ${domain.score || 'N/A'}
-                            </div>
-                        </div>
-                        
-                        <div class="domain-metrics">
-                            <div class="metric">
-                                <div class="metric-value">${domain.isValid ? '✅' : '❌'}</div>
-                                <div class="metric-label">Valid Domain</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-value">${domain.hasWebsite ? '🌐' : '🆓'}</div>
-                                <div class="metric-label">${domain.hasWebsite ? 'Has Website' : 'Available'}</div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-value">${domain.isValid && !domain.hasWebsite ? '⭐' : '📊'}</div>
-                                <div class="metric-label">${domain.isValid && !domain.hasWebsite ? 'Opportunity' : 'Analysis'}</div>
-                            </div>
-                        </div>
-                        
-                        ${isBest ? `
-                            <button class="generate-website-btn" onclick="generateWebsite('${domain.domain}')">
-                                🚀 Generate Website for ${domain.domain}
-                            </button>
-                        ` : ''}
-                    </div>
-                `;
-            });
-            
+            // Add recommendation module at the top if we have a best domain
             if (bestDomain) {
                 // Extract AI insights for detailed recommendation
                 const aiInsights = bestDomain.aiInsights || {};
@@ -1267,7 +1213,7 @@
                 const reasoning = aiInsights.reasoning || '';
                 
                 resultsHTML += `
-                    <div style="background: #e8f5e9; padding: 25px; border-radius: 12px; margin-top: 20px; border-left: 4px solid #4caf50;">
+                    <div style="background: #e8f5e9; padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #4caf50;">
                         <h4 style="color: #2e7d32; margin-bottom: 15px; font-size: 20px;">🎯 Recommendation</h4>
                         <div style="text-align: left;">
                             <p style="font-size: 16px; margin-bottom: 15px;"><strong>${bestDomain.domain}</strong> is your best opportunity with a score of <strong>${bestDomain.score}</strong>!</p>
@@ -1325,6 +1271,74 @@
                 `;
             }
             
+            domains.forEach((domain, index) => {
+                const isBest = domain.domain === bestDomain.domain;
+                const scoreColor = domain.score >= 80 ? '#4caf50' : domain.score >= 60 ? '#ff9800' : '#f44336';
+                
+                // Generate score breakdown reasons for each domain
+                const scoreReasons = [];
+                if (domain.isValid) scoreReasons.push('Valid domain structure (+30)');
+                if (!domain.hasWebsite) scoreReasons.push('Domain available (+40)');
+                else scoreReasons.push('Existing website (-20)');
+                if (domain.domain.length <= 12) scoreReasons.push('Short and memorable (+20)');
+                if (!domain.domain.includes('-')) scoreReasons.push('No hyphens (+10)');
+                
+                const extension = domain.domain.split('.').pop().toLowerCase();
+                if (extension === 'com') scoreReasons.push('.com extension (+15)');
+                else if (extension === 'io') scoreReasons.push('.io extension (+10)');
+                else if (extension === 'ai') scoreReasons.push('.ai extension (+8)');
+                
+                // Check for AI insights
+                const aiInsights = domain.aiInsights || {};
+                if (aiInsights.businessConcept) scoreReasons.push('Clear business concept (+15)');
+                if (aiInsights.targetDemographic) scoreReasons.push('Target audience identified (+10)');
+                
+                resultsHTML += `
+                    <div class="domain-result ${isBest ? 'best' : ''}">
+                        <div class="domain-header">
+                            <div class="domain-name">
+                                ${domain.domain}
+                                ${isBest ? ' 🏆' : ''}
+                            </div>
+                            <div class="domain-score ${isBest ? 'best' : ''}" style="background: ${scoreColor};">
+                                Score: ${domain.score || 'N/A'}
+                            </div>
+                        </div>
+                        
+                        <div class="domain-metrics">
+                            <div class="metric">
+                                <div class="metric-value">${domain.isValid ? '✅' : '❌'}</div>
+                                <div class="metric-label">Valid Domain</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">${domain.hasWebsite ? '🌐' : '🆓'}</div>
+                                <div class="metric-label">${domain.hasWebsite ? 'Has Website' : 'Available'}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-value">${domain.isValid && !domain.hasWebsite ? '⭐' : '📊'}</div>
+                                <div class="metric-label">${domain.isValid && !domain.hasWebsite ? 'Opportunity' : 'Analysis'}</div>
+                            </div>
+                        </div>
+                        
+                        ${scoreReasons.length > 0 ? `
+                            <div style="margin-top: 10px; padding: 10px; background: rgba(0, 0, 0, 0.05); border-radius: 6px;">
+                                <strong style="font-size: 14px; color: #333;">📊 Score Breakdown:</strong>
+                                <div style="margin-top: 5px;">
+                                    ${scoreReasons.map(reason => `<span style="background: #f5f5f5; color: #666; padding: 2px 6px; border-radius: 4px; margin-right: 6px; font-size: 12px; display: inline-block; margin-bottom: 3px;">${reason}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${aiInsights.businessConcept ? `
+                            <div style="margin-top: 10px; padding: 8px; background: rgba(87, 48, 236, 0.1); border-radius: 6px;">
+                                <strong style="font-size: 12px; color: #5730ec;">💡 Business Concept:</strong>
+                                <p style="margin: 2px 0 0 0; font-size: 12px; color: #666;">${aiInsights.businessConcept}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
             analysisResults.innerHTML = resultsHTML;
         }
 
@@ -1361,14 +1375,6 @@
                     statusText.textContent = `✅ Website generated successfully for ${bestDomain}!`;
                     statusEl.classList.remove('error');
                     
-                    // Update the generate button to show success
-                    const generateBtn = document.querySelector(`button[onclick="generateWebsite('${bestDomain}')"]`);
-                    if (generateBtn) {
-                        generateBtn.textContent = '✅ Website Generated!';
-                        generateBtn.style.background = '#4caf50';
-                        generateBtn.disabled = true;
-                    }
-                    
                     // Refresh projects cache to show new website
                     setTimeout(() => {
                         refreshProjects();
@@ -1382,7 +1388,7 @@
                             message: `Website generated successfully for ${bestDomain}! Would you like to view it in the Projects tab?`,
                             actions: [
                                 {
-                                    text: 'Cancel',
+                                    text: 'Stay Here',
                                     type: 'dialog-btn-secondary',
                                     callback: () => {}
                                 },
@@ -1401,73 +1407,12 @@
                 
             } catch (error) {
                 console.error('Auto website generation error:', error);
-                statusText.textContent = `❌ Automatic generation failed. You can still generate manually using the button below.`;
+                statusText.textContent = `❌ Website generation failed. Please try analyzing again or check your internet connection.`;
                 statusEl.classList.add('error');
             }
         }
 
-        async function generateWebsite(domain) {
-            if (!domain) return;
-            
-            const button = event.target;
-            const originalText = button.textContent;
-            
-            try {
-                button.textContent = '🔄 Generating...';
-                button.disabled = true;
-                
-                const response = await fetch('/api/execute-v2', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        domains: [domain],
-                        generateWebsite: true 
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    button.textContent = '✅ Website Generated!';
-                    button.style.background = '#4caf50';
-                    
-                    // Refresh projects cache to show new website
-                    setTimeout(() => {
-                        refreshProjects();
-                        switchPage('projects');
-                    }, 2000);
-                    
-                    showDialog({
-                        type: 'success',
-                        title: 'Website Generated!',
-                        message: `Website generated successfully for ${domain}! Check the Projects tab.`,
-                        actions: [
-                            {
-                                text: 'View Projects',
-                                type: 'dialog-btn-primary',
-                                callback: () => switchPage('projects')
-                            }
-                        ]
-                    });
-                } else {
-                    throw new Error(data.error || 'Website generation failed');
-                }
-                
-            } catch (error) {
-                console.error('Website generation error:', error);
-                button.textContent = '❌ Generation Failed';
-                button.style.background = '#f44336';
-                alertDialog('Website generation failed. Please try again.', 'error', 'Generation Failed');
-            } finally {
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.disabled = false;
-                    button.style.background = '#4caf50';
-                }, 3000);
-            }
-        }
+
 
         // Analyzer form functionality
         document.addEventListener('DOMContentLoaded', function() {
