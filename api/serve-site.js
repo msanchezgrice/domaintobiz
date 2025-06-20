@@ -1,19 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-  // Create Supabase client inside the handler to ensure env vars are available
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
-  );
-  
-  const { slug, file } = req.query;
-
-  if (!slug) {
-    return res.status(400).json({ error: 'Site slug is required' });
-  }
-
   try {
+    // Create Supabase client inside the handler to ensure env vars are available
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY
+    );
+    
+    const { slug, file } = req.query;
+
+    if (!slug) {
+      return res.status(400).json({ error: 'Site slug is required' });
+    }
+
     // Get deployment by slug
     const { data: deployment, error: deploymentError } = await supabase
       .from('website_deployments')
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error serving website:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
 
@@ -67,11 +67,11 @@ function serveWebsiteContent(res, website, file) {
   switch (requestedFile) {
     case 'styles.css':
       res.setHeader('Content-Type', 'text/css');
-      return res.status(200).send(website.website_css || generateDefaultCSS());
+      return res.status(200).send(website.website_css || getDefaultCSS());
     
     case 'script.js':
       res.setHeader('Content-Type', 'application/javascript');
-      return res.status(200).send(website.website_js || generateDefaultJS());
+      return res.status(200).send(website.website_js || getDefaultJS());
     
     case 'manifest.json':
       res.setHeader('Content-Type', 'application/json');
@@ -88,11 +88,11 @@ function serveWebsiteContent(res, website, file) {
     default:
       // Serve HTML for all other requests
       res.setHeader('Content-Type', 'text/html');
-      return res.status(200).send(website.website_html || generateDefaultHTML(website));
+      return res.status(200).send(website.website_html || getDefaultHTML(website));
   }
 }
 
-function generateDefaultHTML(website) {
+function getDefaultHTML(website) {
   const domain = website?.domain || 'Business Website';
   const businessType = website?.website_data?.strategy?.businessModel?.type || 'Business';
   
@@ -102,7 +102,28 @@ function generateDefaultHTML(website) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${domain} - ${businessType}</title>
-    <link rel="stylesheet" href="?file=styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .hero { text-align: center; padding: 100px 0 80px; color: white; }
+        .hero h1 { font-size: 3.5rem; margin-bottom: 1rem; font-weight: 700; }
+        .tagline { font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.9; }
+        .cta-button { display: inline-block; background: white; color: #667eea; padding: 15px 30px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 1.1rem; transition: transform 0.3s ease; }
+        .cta-button:hover { transform: translateY(-2px); }
+        .features { background: white; padding: 80px 0; margin: 0 -20px; }
+        .features h2 { text-align: center; font-size: 2.5rem; margin-bottom: 3rem; color: #333; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+        .feature { text-align: center; padding: 2rem; border-radius: 10px; background: #f8f9fa; transition: transform 0.3s ease; }
+        .feature:hover { transform: translateY(-5px); }
+        .feature h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #667eea; }
+        .contact { text-align: center; padding: 80px 0; color: white; }
+        .contact h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .contact p { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; }
+        .contact-button { background: transparent; border: 2px solid white; color: white; padding: 15px 30px; border-radius: 30px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .contact-button:hover { background: white; color: #667eea; }
+        @media (max-width: 768px) { .hero h1 { font-size: 2.5rem; } .feature-grid { grid-template-columns: 1fr; } .container { padding: 0 15px; } }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -133,15 +154,19 @@ function generateDefaultHTML(website) {
         <section id="contact" class="contact">
             <h2>Get In Touch</h2>
             <p>Ready to start your project? Contact us today!</p>
-            <button class="contact-button">Contact Us</button>
+            <button class="contact-button" onclick="alert('Thank you for your interest! This is a demo website generated by AI.')">Contact Us</button>
         </section>
     </div>
-    <script src="?file=script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('AI-generated website loaded successfully!');
+        });
+    </script>
 </body>
 </html>`;
 }
 
-function generateDefaultCSS() {
+function getDefaultCSS() {
   return `* {
     margin: 0;
     padding: 0;
@@ -174,12 +199,6 @@ body {
     font-weight: 700;
 }
 
-.tagline {
-    font-size: 1.3rem;
-    margin-bottom: 2rem;
-    opacity: 0.9;
-}
-
 .cta-button {
     display: inline-block;
     background: white;
@@ -189,120 +208,17 @@ body {
     text-decoration: none;
     font-weight: 600;
     font-size: 1.1rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
 .cta-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-}
-
-.features {
-    background: white;
-    padding: 80px 0;
-    margin: 0 -20px;
-}
-
-.features h2 {
-    text-align: center;
-    font-size: 2.5rem;
-    margin-bottom: 3rem;
-    color: #333;
-}
-
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.feature {
-    text-align: center;
-    padding: 2rem;
-    border-radius: 10px;
-    background: #f8f9fa;
-    transition: transform 0.3s ease;
-}
-
-.feature:hover {
-    transform: translateY(-5px);
-}
-
-.feature h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: #667eea;
-}
-
-.contact {
-    text-align: center;
-    padding: 80px 0;
-    color: white;
-}
-
-.contact h2 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-}
-
-.contact p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    opacity: 0.9;
-}
-
-.contact-button {
-    background: transparent;
-    border: 2px solid white;
-    color: white;
-    padding: 15px 30px;
-    border-radius: 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.contact-button:hover {
-    background: white;
-    color: #667eea;
-}
-
-@media (max-width: 768px) {
-    .hero h1 {
-        font-size: 2.5rem;
-    }
-    
-    .feature-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .container {
-        padding: 0 15px;
-    }
 }`;
 }
 
-function generateDefaultJS() {
+function getDefaultJS() {
   return `document.addEventListener('DOMContentLoaded', function() {
     console.log('AI-generated website loaded successfully!');
-    
-    // Smooth scrolling for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
     
     // Contact button interaction
     const contactButton = document.querySelector('.contact-button');
@@ -311,23 +227,5 @@ function generateDefaultJS() {
             alert('Thank you for your interest! This is a demo website generated by AI.');
         });
     }
-    
-    // Add some interactive animations
-    const features = document.querySelectorAll('.feature');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    });
-    
-    features.forEach(feature => {
-        feature.style.opacity = '0';
-        feature.style.transform = 'translateY(20px)';
-        feature.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(feature);
-    });
 });`;
 }
