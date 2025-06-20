@@ -32,10 +32,13 @@ export default async function handler(req, res) {
 
     if (deploymentError || !deployment) {
       // Fallback: try to find by deployment_url containing the slug
+      // Handle both direct slug match and domain-based matching
+      const domainFromSlug = slug.replace(/-\d+$/, '').replace(/-/g, '.');
+      
       const { data: fallbackDeployment, error: fallbackError } = await supabase
         .from('generated_websites')
         .select('*')
-        .ilike('deployment_url', `%${slug}%`)
+        .or(`deployment_url.ilike.%${slug}%,deployment_url.ilike.%${domainFromSlug}%,domain.eq.${domainFromSlug}`)
         .eq('status', 'completed')
         .single();
 
