@@ -31,8 +31,16 @@
       "destination": "/public/projects.html"
     },
     {
+      "source": "/project-details.html",
+      "destination": "/public/project-details.html"
+    },
+    {
       "source": "/index.html",
       "destination": "/public/index.html"
+    },
+    {
+      "source": "/landing.html",
+      "destination": "/public/landing.html"
     },
     {
       "source": "/",

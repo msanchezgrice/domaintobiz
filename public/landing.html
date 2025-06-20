@@ -386,10 +386,10 @@
             <div class="logo">🚀 DomainGenius</div>
             <div class="nav-links">
                 <a href="#home" class="nav-link active" data-section="home">Home</a>
-                <a href="#analyzer" class="nav-link" data-section="analyzer">Analyzer</a>
-                <a href="#projects" class="nav-link" data-section="projects">Projects</a>
-                <a href="#agents" class="nav-link" data-section="agents">Agent Monitor</a>
-                <a href="#analyzer" class="cta-btn nav-link" data-section="analyzer">Launch App</a>
+                <a href="/app" class="nav-link" data-section="analyzer">Analyzer</a>
+                <a href="/projects.html" class="nav-link" data-section="projects">Projects</a>
+                <a href="/agents.html" class="nav-link" data-section="agents">Agent Monitor</a>
+                <a href="/app" class="cta-btn nav-link">Launch App</a>
             </div>
         </div>
     </nav>
@@ -579,7 +579,14 @@
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
                     const section = this.getAttribute('data-section');
-                    navigateToSection(section);
+                    const href = this.getAttribute('href');
+                    
+                    // Handle external URLs that need page navigation
+                    if (href && (href.startsWith('/app') || href.startsWith('/projects') || href.startsWith('/agents'))) {
+                        window.location.href = href;
+                    } else {
+                        navigateToSection(section);
+                    }
                 });
             });
         }

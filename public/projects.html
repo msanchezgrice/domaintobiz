@@ -545,8 +545,8 @@
         function viewDetails(projectId) {
             const project = projects.find(p => p.id === projectId);
             if (project) {
-                // Open detailed view or modal
-                window.open(`/project-details.html?id=${projectId}`, '_blank');
+                // Open detailed view with both id and domain for better compatibility
+                window.open(`/project-details.html?id=${projectId}&domain=${encodeURIComponent(project.domain)}`, '_blank');
             }
         }
         
