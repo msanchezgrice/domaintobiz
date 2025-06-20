@@ -63,7 +63,7 @@ Consider: brandability, SEO potential, market appeal. Return JSON only:
 
     try {
       const response = await openaiClient.chat.completions.create({
-        model: "gpt-3.5-turbo", // Faster than GPT-4
+                        model: "gpt-4.1-2025-04-14", // Latest GPT-4 model
         messages: [
           {
             role: "system",

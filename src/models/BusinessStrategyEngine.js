@@ -230,7 +230,7 @@ export class BusinessStrategyEngine {
     `;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4.1-2025-04-14',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' }
     });
@@ -455,7 +455,7 @@ export class BusinessStrategyEngine {
     `;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4.1-2025-04-14',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' }
     });

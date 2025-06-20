@@ -169,7 +169,7 @@ export class ContentAgent {
     `;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1-2025-04-14',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       max_tokens: 1000
@@ -294,7 +294,7 @@ export class ContentAgent {
     `;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1-2025-04-14',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       max_tokens: 1500

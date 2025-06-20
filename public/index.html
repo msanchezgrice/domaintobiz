@@ -526,13 +526,126 @@
                 font-size: 13px;
             }
         }
+
+        /* Custom Dialog System */
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+
+        .dialog-overlay.active {
+            display: flex;
+        }
+
+        .dialog {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .dialog-overlay.active .dialog {
+            transform: scale(1);
+        }
+
+        .dialog-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+        }
+
+        .dialog-icon.success {
+            background: #dcfce7;
+            color: #22c55e;
+        }
+
+        .dialog-icon.error {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .dialog-icon.warning {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .dialog-icon.info {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .dialog-title {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+
+        .dialog-message {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .dialog-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .dialog-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dialog-btn-primary {
+            background: #5730ec;
+            color: white;
+        }
+
+        .dialog-btn-primary:hover {
+            background: #4520dc;
+        }
+
+        .dialog-btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .dialog-btn-secondary:hover {
+            background: #e5e7eb;
+        }
     </style>
 </head>
 <body>
     <!-- Fixed Header -->
     <header class="header">
         <div class="header-content">
-            <div class="logo">DomainToBiz</div>
+            <div class="logo" onclick="switchPage('analyzer')" style="cursor: pointer;">DomainToBiz</div>
             <nav class="nav">
                 <button class="nav-item active" data-page="home">Home</button>
                 <button class="nav-item" data-page="analyzer">Analyzer</button>
@@ -666,10 +779,10 @@
                                 <textarea 
                                     id="domains" 
                                     name="domains" 
-                                    placeholder="Enter domain names, one per line (max 20 domains)&#10;&#10;Example:&#10;techstartup.com&#10;innovatehub.io&#10;nextgenapp.ai&#10;myawesomeapp.com&#10;businesshub.co"
+                                    placeholder="Enter domain names, one per line (max 10 domains)&#10;&#10;Example:&#10;techstartup.com&#10;innovatehub.io&#10;nextgenapp.ai&#10;myawesomeapp.com&#10;businesshub.co"
                                     required
                                 ></textarea>
-                                <p style="font-size: 14px; color: #666; margin-top: 5px;">Enter one domain per line (maximum 20). For best results with AI analysis, use 10 or fewer domains.</p>
+                                <p style="font-size: 14px; color: #666; margin-top: 5px;">Enter one domain per line (maximum 10 domains).</p>
                             </div>
                             
                             <button type="submit" class="btn" id="analyzeBtn">Analyze Domains</button>
@@ -712,7 +825,99 @@
         <p>&copy; 2025 DomainToBiz. Transform domains into businesses with AI.</p>
     </div>
 
+    <!-- Custom Dialog -->
+    <div id="customDialog" class="dialog-overlay">
+        <div class="dialog">
+            <div id="dialogIcon" class="dialog-icon"></div>
+            <h3 id="dialogTitle" class="dialog-title"></h3>
+            <p id="dialogMessage" class="dialog-message"></p>
+            <div id="dialogActions" class="dialog-actions"></div>
+        </div>
+    </div>
+
     <script>
+        // Custom Dialog System
+        function showDialog(options) {
+            const dialog = document.getElementById('customDialog');
+            const icon = document.getElementById('dialogIcon');
+            const title = document.getElementById('dialogTitle');
+            const message = document.getElementById('dialogMessage');
+            const actions = document.getElementById('dialogActions');
+
+            // Set icon and type
+            icon.className = `dialog-icon ${options.type || 'info'}`;
+            icon.textContent = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            }[options.type || 'info'];
+
+            // Set content
+            title.textContent = options.title || 'Notification';
+            message.textContent = options.message || '';
+
+            // Set actions
+            actions.innerHTML = '';
+            if (options.actions) {
+                options.actions.forEach(action => {
+                    const button = document.createElement('button');
+                    button.className = `dialog-btn ${action.type || 'dialog-btn-secondary'}`;
+                    button.textContent = action.text;
+                    button.onclick = () => {
+                        hideDialog();
+                        if (action.callback) action.callback();
+                    };
+                    actions.appendChild(button);
+                });
+            } else {
+                // Default OK button
+                const okButton = document.createElement('button');
+                okButton.className = 'dialog-btn dialog-btn-primary';
+                okButton.textContent = 'OK';
+                okButton.onclick = () => {
+                    hideDialog();
+                    if (options.callback) options.callback();
+                };
+                actions.appendChild(okButton);
+            }
+
+            // Show dialog
+            dialog.classList.add('active');
+        }
+
+        function hideDialog() {
+            document.getElementById('customDialog').classList.remove('active');
+        }
+
+        function confirmDialog(message, callback) {
+            showDialog({
+                type: 'warning',
+                title: 'Confirm',
+                message: message,
+                actions: [
+                    {
+                        text: 'Cancel',
+                        type: 'dialog-btn-secondary',
+                        callback: () => {}
+                    },
+                    {
+                        text: 'Confirm',
+                        type: 'dialog-btn-primary',
+                        callback: callback
+                    }
+                ]
+            });
+        }
+
+        function alertDialog(message, type = 'info', title = 'Notice') {
+            showDialog({
+                type: type,
+                title: title,
+                message: message
+            });
+        }
+
         // Local storage key for projects cache
         const PROJECTS_CACHE_KEY = 'domaintobiz_projects_cache';
         const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -932,39 +1137,37 @@
         }
 
         async function deleteProject(projectId, domain) {
-            if (!confirm(`Are you sure you want to delete the project for ${domain}? This action cannot be undone.`)) {
-                return;
-            }
+            confirmDialog(`Are you sure you want to delete the project for ${domain}? This action cannot be undone.`, async () => {
+                try {
+                    const response = await fetch('/api/projects', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id: projectId })
+                    });
 
-            try {
-                const response = await fetch('/api/projects', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: projectId })
-                });
-
-                if (response.ok) {
-                    // Remove from cache and refresh display
-                    if (projectsCache.data?.projects) {
-                        projectsCache.data.projects = projectsCache.data.projects.filter(p => p.id !== projectId);
-                        localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(projectsCache));
-                        displayProjects(projectsCache.data);
+                    if (response.ok) {
+                        // Remove from cache and refresh display
+                        if (projectsCache.data?.projects) {
+                            projectsCache.data.projects = projectsCache.data.projects.filter(p => p.id !== projectId);
+                            localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(projectsCache));
+                            displayProjects(projectsCache.data);
+                        }
+                        
+                        // Also refresh from API to ensure consistency
+                        setTimeout(() => {
+                            loadProjectsFromAPI(false);
+                        }, 1000);
+                    } else {
+                        const error = await response.json();
+                        alertDialog('Failed to delete project: ' + (error.message || 'Unknown error'), 'error', 'Delete Failed');
                     }
-                    
-                    // Also refresh from API to ensure consistency
-                    setTimeout(() => {
-                        loadProjectsFromAPI(false);
-                    }, 1000);
-                } else {
-                    const error = await response.json();
-                    alert('Failed to delete project: ' + (error.message || 'Unknown error'));
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    alertDialog('Failed to delete project. Please try again.', 'error', 'Delete Failed');
                 }
-            } catch (error) {
-                console.error('Delete error:', error);
-                alert('Failed to delete project. Please try again.');
-            }
+            });
         }
 
         function viewDetails(projectId) {
@@ -973,7 +1176,7 @@
                 // Open detailed view with both id and domain for better compatibility
                 window.open(`/project-details.html?id=${projectId}&domain=${encodeURIComponent(project.domain)}`, '_blank');
             } else {
-                alert('Project details not found. Please refresh and try again.');
+                alertDialog('Project details not found. Please refresh and try again.', 'error', 'Details Not Found');
             }
         }
 
@@ -1109,9 +1312,23 @@
                     
                     // Show success notification
                     setTimeout(() => {
-                        if (confirm(`🎉 Website generated successfully for ${bestDomain}! Would you like to view it in the Projects tab?`)) {
-                            switchPage('projects');
-                        }
+                        showDialog({
+                            type: 'success',
+                            title: 'Website Generated!',
+                            message: `Website generated successfully for ${bestDomain}! Would you like to view it in the Projects tab?`,
+                            actions: [
+                                {
+                                    text: 'Cancel',
+                                    type: 'dialog-btn-secondary',
+                                    callback: () => {}
+                                },
+                                {
+                                    text: 'View Projects',
+                                    type: 'dialog-btn-primary',
+                                    callback: () => switchPage('projects')
+                                }
+                            ]
+                        });
                     }, 2000);
                     
                 } else {
@@ -1158,7 +1375,18 @@
                         switchPage('projects');
                     }, 2000);
                     
-                    alert(`🎉 Website generated successfully for ${domain}! Check the Projects tab.`);
+                    showDialog({
+                        type: 'success',
+                        title: 'Website Generated!',
+                        message: `Website generated successfully for ${domain}! Check the Projects tab.`,
+                        actions: [
+                            {
+                                text: 'View Projects',
+                                type: 'dialog-btn-primary',
+                                callback: () => switchPage('projects')
+                            }
+                        ]
+                    });
                 } else {
                     throw new Error(data.error || 'Website generation failed');
                 }
@@ -1167,7 +1395,7 @@
                 console.error('Website generation error:', error);
                 button.textContent = '❌ Generation Failed';
                 button.style.background = '#f44336';
-                alert('Website generation failed. Please try again.');
+                alertDialog('Website generation failed. Please try again.', 'error', 'Generation Failed');
             } finally {
                 setTimeout(() => {
                     button.textContent = originalText;
@@ -1188,19 +1416,13 @@
                     const domains = domainsTextarea.value.trim().split('\n').filter(d => d.trim());
                     
                     if (domains.length === 0) {
-                        alert('Please enter at least one domain name.');
-                        return;
-                    }
-
-                    if (domains.length > 20) {
-                        alert(`Too many domains! Please limit to 20 domains maximum. You entered ${domains.length} domains.`);
+                        alertDialog('Please enter at least one domain name.', 'warning', 'No Domains');
                         return;
                     }
 
                     if (domains.length > 10) {
-                        if (!confirm(`You're analyzing ${domains.length} domains. This may take longer and will use basic analysis instead of AI. Continue?`)) {
-                            return;
-                        }
+                        alertDialog(`Maximum 10 domains allowed. Please reduce the number of domains. You entered ${domains.length} domains.`, 'warning', 'Too Many Domains');
+                        return;
                     }
 
                     const statusEl = document.getElementById('status');
