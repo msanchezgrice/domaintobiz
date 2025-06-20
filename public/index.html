@@ -1369,7 +1369,22 @@
                     })
                 });
                 
+                console.log('🔍 Execute response status:', response.status);
+                
+                if (!response.ok) {
+                    let errorMessage = `Server error (${response.status})`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch (parseError) {
+                        const errorText = await response.text();
+                        errorMessage = errorText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
                 const data = await response.json();
+                console.log('📊 Execute response data:', data);
                 
                 if (data.success) {
                     statusText.textContent = `✅ Website generated successfully for ${bestDomain}!`;
@@ -1407,7 +1422,25 @@
                 
             } catch (error) {
                 console.error('Auto website generation error:', error);
-                statusText.textContent = `❌ Website generation failed. Please try analyzing again or check your internet connection.`;
+                
+                // Try to extract more specific error message
+                let errorMessage = 'Website generation failed. Please try analyzing again or check your internet connection.';
+                
+                if (error.message) {
+                    if (error.message.includes('500')) {
+                        errorMessage = 'Server error during website generation. Please try again in a moment.';
+                    } else if (error.message.includes('timeout')) {
+                        errorMessage = 'Website generation timed out. Please try again with fewer domains.';
+                    } else if (error.message.includes('Network')) {
+                        errorMessage = 'Network connection issue. Please check your internet connection.';
+                    } else if (error.message.includes('Website generation failed')) {
+                        errorMessage = 'Website generation failed. Our servers may be experiencing issues. Please try again.';
+                    } else {
+                        errorMessage = `Website generation failed: ${error.message}`;
+                    }
+                }
+                
+                statusText.textContent = `❌ ${errorMessage}`;
                 statusEl.classList.add('error');
             }
         }

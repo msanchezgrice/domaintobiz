@@ -100,43 +100,66 @@ export default async function handler(req, res) {
       .single();
 
     if (dbError) {
-      console.error('❌ Database error:', dbError);
+      console.error('❌ Database error when saving website:', {
+        error: dbError,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint,
+        code: dbError.code
+      });
+      
+      // Database error is not critical for website generation
+      // Continue with success but note the database issue
+      console.warn('⚠️ Website generated successfully but database save failed');
     } else {
       console.log('✅ Website saved to database with ID:', savedWebsite?.id);
 
-      // Save individual files to website_files table
-      const files = [
-        { file_name: 'index.html', file_content: htmlContent, file_type: 'html' },
-        { file_name: 'styles.css', file_content: cssContent, file_type: 'css' },
-        { file_name: 'script.js', file_content: jsContent, file_type: 'js' },
-        { file_name: 'manifest.json', file_content: manifestContent, file_type: 'json' }
-      ];
+      try {
+        // Save individual files to website_files table
+        const files = [
+          { file_name: 'index.html', file_content: htmlContent, file_type: 'html' },
+          { file_name: 'styles.css', file_content: cssContent, file_type: 'css' },
+          { file_name: 'script.js', file_content: jsContent, file_type: 'js' },
+          { file_name: 'manifest.json', file_content: manifestContent, file_type: 'json' }
+        ];
 
-      for (const file of files) {
-        await supabase
-          .from('website_files')
+        for (const file of files) {
+          const { error: fileError } = await supabase
+            .from('website_files')
+            .insert({
+              website_id: savedWebsite.id,
+              ...file
+            });
+            
+          if (fileError) {
+            console.warn('⚠️ Failed to save file to database:', file.file_name, fileError.message);
+          }
+        }
+
+        // Create deployment record
+        const { error: deploymentError } = await supabase
+          .from('website_deployments')
           .insert({
             website_id: savedWebsite.id,
-            ...file
+            deployment_url: deploymentUrl,
+            deployment_slug: deploymentSlug,
+            deployment_status: 'ready',
+            deployment_data: {
+              domain,
+              executionId,
+              filesGenerated: files.length,
+              generatedAt: new Date().toISOString()
+            },
+            deployed_at: new Date().toISOString()
           });
+          
+        if (deploymentError) {
+          console.warn('⚠️ Failed to save deployment record:', deploymentError.message);
+        }
+      } catch (fileOperationError) {
+        console.warn('⚠️ Error during database file operations:', fileOperationError.message);
+        // Continue anyway - the main website was saved
       }
-
-      // Create deployment record
-      await supabase
-        .from('website_deployments')
-        .insert({
-          website_id: savedWebsite.id,
-          deployment_url: deploymentUrl,
-          deployment_slug: deploymentSlug,
-          deployment_status: 'ready',
-          deployment_data: {
-            domain,
-            executionId,
-            filesGenerated: files.length,
-            generatedAt: new Date().toISOString()
-          },
-          deployed_at: new Date().toISOString()
-        });
     }
 
     console.log(`🎉 Website generation completed for ${domain}`);

@@ -326,11 +326,21 @@ export default async function handler(req, res) {
         })
       });
 
+      console.log('📡 Website generation API response status:', websiteResponse.status);
+
       if (!websiteResponse.ok) {
-        throw new Error(`Website generation HTTP error: ${websiteResponse.status}`);
+        const errorText = await websiteResponse.text();
+        console.error('❌ Website generation HTTP error:', {
+          status: websiteResponse.status,
+          statusText: websiteResponse.statusText,
+          body: errorText
+        });
+        throw new Error(`Website generation failed with status ${websiteResponse.status}: ${errorText}`);
       }
 
       const websiteData = await websiteResponse.json();
+      console.log('📊 Website generation response:', websiteData);
+      
       if (websiteData.success) {
         agentResults.development = {
           status: 'completed',
@@ -353,35 +363,59 @@ export default async function handler(req, res) {
         console.log('✅ Website generation completed successfully');
         console.log('🌐 Deployment URL:', websiteData.data.deploymentUrl);
       } else {
-        throw new Error(websiteData.message || 'Website generation failed');
+        const errorMsg = websiteData.message || websiteData.error || 'Website generation failed';
+        console.error('❌ Website generation API returned error:', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
-      console.error('❌ Website generation error:', error);
+      console.error('❌ Website generation error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       
-      // Fallback to mock deployment
-      const fallbackSlug = `${targetDomain.replace(/\./g, '-')}-${Date.now()}`;
-      const fallbackUrl = `${origin}/sites/${fallbackSlug}/`;
-      
-      agentResults.development = {
-        status: 'error',
-        error: error.message,
-        files: ['index.html', 'styles.css', 'script.js'],
-        framework: 'vanilla'
-      };
-      
-      agentResults.deployment = {
-        status: 'error',
-        url: fallbackUrl,
-        originalDomain: targetDomain,
-        error: error.message,
-        hosting: 'vercel',
-        deploymentId: executionId
-      };
+      // Don't fall back to mock data - throw the error to properly handle failure
+      throw new Error(`Website generation failed: ${error.message}`);
     }
     
     console.log('🤖 All agents execution completed');
 
-    // Step 4: Save results
+    // Check if website generation succeeded
+    if (agentResults.deployment?.status !== 'completed') {
+      const deploymentError = agentResults.deployment?.error || 'Website generation failed';
+      console.error(`❌ Pipeline failed due to deployment error: ${deploymentError}`);
+      
+      // Update progress with failure
+      await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'failed',
+          completedSteps: 3, // We got to website generation but it failed
+          totalSteps: 4,
+          agents: {
+            design: { status: 'completed', message: 'Design completed' },
+            content: { status: 'completed', message: 'Content completed' },
+            development: { status: 'error', message: 'Website generation failed' },
+            deployment: { status: 'error', message: deploymentError }
+          },
+          error: deploymentError
+        })
+      });
+      
+      return res.status(500).json({
+        success: false,
+        error: 'Pipeline execution failed',
+        message: deploymentError,
+        executionId,
+        sessionId: executionId,
+        domain: targetDomain,
+        stage: 'website_generation',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Step 4: Save results (only if deployment succeeded)
     const result = {
       executionId,
       domain: targetDomain,
@@ -392,7 +426,6 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     };
 
-    // Database save is handled by the website generation API
     console.log(`✅ Execution result saved via website generation API`);
     
     const savedWebsite = { id: agentResults.development?.websiteId || 'generated' };
