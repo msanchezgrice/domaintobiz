@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
     // Generate unique deployment slug
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
-    const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}/`;
+    const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;
 
     // Generate HTML content
     const htmlContent = generateHTML(domain, strategy, designSystem, websiteContent);
@@ -454,61 +454,456 @@ footer a {
 }
 
 function generateJS(domain) {
-  return `// Website functionality for ${domain}
+  return `// Modern Website functionality for ${domain}
+
+// Utility functions
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => document.querySelectorAll(selector);
+
+// Intersection Observer for animations
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+        }
+    });
+}, observerOptions);
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Modern website loaded for ${domain}');
+    
+    // Initialize all features
+    initNavigation();
+    initScrollEffects();
+    initAnimations();
+    initContactForm();
+    initMobileMenu();
+    initParallax();
+    initCounters();
+    
+    // Analytics tracking
+    trackPageView();
+});
+
+// Navigation functionality
+function initNavigation() {
     // Smooth scrolling for navigation links
-    const navLinks = document.querySelectorAll('nav a[href^="#"]');
+    const navLinks = $$('.nav-link[href^="#"], .btn[href^="#"]');
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const targetId = this.getAttribute('href').substring(1);
             const targetElement = document.getElementById(targetId);
+            
             if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth' });
+                const headerHeight = $('.header').offsetHeight;
+                const targetPosition = targetElement.offsetTop - headerHeight;
+                
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+                
+                // Close mobile menu if open
+                const navMenu = $('.nav-menu');
+                if (navMenu) {
+                    navMenu.classList.remove('active');
+                }
             }
         });
     });
-
-    // Contact form handling
-    const contactForm = document.querySelector('.contact-form');
-    if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = this.querySelector('input[type="email"]').value;
+    
+    // Active navigation highlighting
+    const sections = $$('section[id]');
+    const navLinksArray = Array.from(navLinks);
+    
+    window.addEventListener('scroll', () => {
+        const scrollPosition = window.scrollY + 100;
+        
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.offsetHeight;
+            const sectionId = section.getAttribute('id');
             
-            // Simple validation
-            if (email && email.includes('@')) {
-                alert('Thank you for your interest! We\\'ll be in touch soon.');
-                this.querySelector('input[type="email"]').value = '';
-            } else {
-                alert('Please enter a valid email address.');
+            if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
+                navLinksArray.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === \`#\${sectionId}\`) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+        });
+    });
+}
+
+// Scroll effects for header
+function initScrollEffects() {
+    const header = $('.header');
+    let lastScrollY = 0;
+    
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        
+        // Header background opacity
+        if (scrollY > 50) {
+            header.style.background = 'rgba(255, 255, 255, 0.95)';
+            header.style.backdropFilter = 'blur(20px)';
+            header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+        } else {
+            header.style.background = 'rgba(255, 255, 255, 0.95)';
+            header.style.backdropFilter = 'blur(20px)';
+            header.style.boxShadow = 'none';
+        }
+        
+        // Header hide/show on scroll
+        if (scrollY > lastScrollY && scrollY > 100) {
+            header.style.transform = 'translateY(-100%)';
+        } else {
+            header.style.transform = 'translateY(0)';
+        }
+        
+        lastScrollY = scrollY;
+    });
+}
+
+// Animation initialization
+function initAnimations() {
+    // Fade in animations for cards and elements
+    const animatedElements = $$('.feature-card, .hero-content, .about-text, .contact-content');
+    
+    animatedElements.forEach(element => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(30px)';
+        element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(element);
+    });
+    
+    // Stagger animation for feature cards
+    const featureCards = $$('.feature-card');
+    featureCards.forEach((card, index) => {
+        card.style.transitionDelay = \`\${index * 0.1}s\`;
+    });
+    
+    // Button hover effects
+    const buttons = $$('.btn');
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+}
+
+// Enhanced contact form handling
+function initContactForm() {
+    const contactForm = $('.contact-form');
+    if (!contactForm) return;
+    
+    const submitButton = contactForm.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    
+    contactForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Get form data
+        const formData = new FormData(this);
+        const email = this.querySelector('#email').value;
+        const name = this.querySelector('#name').value;
+        const message = this.querySelector('#message').value;
+        
+        // Validation
+        if (!email || !email.includes('@')) {
+            showNotification('Please enter a valid email address.', 'error');
+            return;
+        }
+        
+        if (!name.trim()) {
+            showNotification('Please enter your name.', 'error');
+            return;
+        }
+        
+        // Show loading state
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="btn-text">Sending...</span>';
+        
+        // Simulate API call (replace with actual submission logic)
+        setTimeout(() => {
+            showNotification(\`Thank you, \${name}! We'll be in touch soon.\`, 'success');
+            contactForm.reset();
+            
+            // Reset button
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+            
+            // Track conversion
+            trackEvent('form_submit', {
+                form_type: 'contact',
+                domain: '${domain}'
+            });
+        }, 1500);
+    });
+    
+    // Real-time validation
+    const inputs = contactForm.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+        
+        input.addEventListener('input', function() {
+            if (this.classList.contains('error')) {
+                validateField(this);
+            }
+        });
+    });
+}
+
+// Field validation
+function validateField(field) {
+    const value = field.value.trim();
+    const fieldType = field.type;
+    const fieldId = field.id;
+    
+    let isValid = true;
+    let errorMessage = '';
+    
+    if (fieldType === 'email') {
+        if (!value || !value.includes('@')) {
+            isValid = false;
+            errorMessage = 'Please enter a valid email address.';
+        }
+    } else if (fieldId === 'name') {
+        if (!value) {
+            isValid = false;
+            errorMessage = 'Please enter your name.';
+        }
+    }
+    
+    if (isValid) {
+        field.classList.remove('error');
+        field.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    } else {
+        field.classList.add('error');
+        field.style.borderColor = '#ef4444';
+    }
+    
+    return isValid;
+}
+
+// Mobile menu functionality
+function initMobileMenu() {
+    const navToggle = $('.nav-toggle');
+    const navMenu = $('.nav-menu');
+    
+    if (navToggle && navMenu) {
+        navToggle.addEventListener('click', function() {
+            navMenu.classList.toggle('active');
+            this.classList.toggle('active');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                navMenu.classList.remove('active');
+                navToggle.classList.remove('active');
             }
         });
     }
+}
 
-    // Add scroll effect to header
-    window.addEventListener('scroll', function() {
-        const header = document.querySelector('header');
-        if (window.scrollY > 100) {
-            header.style.background = 'rgba(255, 255, 255, 0.95)';
-            header.style.backdropFilter = 'blur(10px)';
-        } else {
-            header.style.background = '#ffffff';
-            header.style.backdropFilter = 'none';
-        }
-    });
-
-    // Analytics tracking
-    console.log('Website loaded for domain: ${domain}');
+// Parallax effect for hero section
+function initParallax() {
+    const heroShapes = $$('.shape');
     
-    // Track page views (you can integrate with analytics services)
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        const rate = scrollY * -0.5;
+        
+        heroShapes.forEach((shape, index) => {
+            const speed = 0.1 + (index * 0.05);
+            shape.style.transform = \`translateY(\${rate * speed}px)\`;
+        });
+    });
+}
+
+// Animated counters
+function initCounters() {
+    const counters = $$('.stat-number');
+    
+    const animateCounter = (counter) => {
+        const target = parseInt(counter.textContent.replace(/[^0-9]/g, ''));
+        const duration = 2000;
+        const step = target / (duration / 16);
+        let current = 0;
+        
+        const updateCounter = () => {
+            current += step;
+            if (current < target) {
+                counter.textContent = Math.floor(current) + (counter.textContent.includes('+') ? '+' : counter.textContent.includes('%') ? '%' : '');
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = counter.textContent; // Reset to original
+            }
+        };
+        
+        updateCounter();
+    };
+    
+    const counterObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                counterObserver.unobserve(entry.target);
+            }
+        });
+    });
+    
+    counters.forEach(counter => {
+        counterObserver.observe(counter);
+    });
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = \`notification notification-\${type}\`;
+    notification.textContent = message;
+    
+    // Add styles
+    notification.style.cssText = \`
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    \`;
+    
+    // Set background color based on type
+    if (type === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    } else if (type === 'error') {
+        notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translateX(0)';
+    });
+    
+    // Auto remove
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 4000);
+}
+
+// Analytics and tracking
+function trackPageView() {
+    // Google Analytics 4
     if (typeof gtag !== 'undefined') {
         gtag('event', 'page_view', {
             page_title: document.title,
-            page_location: window.location.href
+            page_location: window.location.href,
+            custom_parameter: 'generated_website'
         });
     }
-});`;
+    
+    // Custom analytics
+    console.log('📊 Page view tracked for ${domain}');
+}
+
+function trackEvent(eventName, parameters = {}) {
+    // Google Analytics 4
+    if (typeof gtag !== 'undefined') {
+        gtag('event', eventName, {
+            ...parameters,
+            domain: '${domain}',
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    console.log('📊 Event tracked:', eventName, parameters);
+}
+
+// Performance optimization
+function optimizePerformance() {
+    // Lazy load images
+    const images = $$('img[data-src]');
+    const imageObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+    
+    images.forEach(img => imageObserver.observe(img));
+    
+    // Preload critical resources
+    const criticalResources = [
+        'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'
+    ];
+    
+    criticalResources.forEach(resource => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.href = resource;
+        link.as = 'style';
+        document.head.appendChild(link);
+    });
+}
+
+// Initialize performance optimizations
+optimizePerformance();
+
+// Error handling
+window.addEventListener('error', function(e) {
+    console.error('JavaScript error:', e.error);
+    trackEvent('javascript_error', {
+        error_message: e.message,
+        error_filename: e.filename,
+        error_lineno: e.lineno
+    });
+});
+
+// Expose utility functions globally
+window.WebsiteUtils = {
+    showNotification,
+    trackEvent,
+    $,
+    $$
+};
+
+console.log('✨ Modern website functionality initialized for ${domain}!');`;
 }
 
 function generateManifest(domain, strategy) {
