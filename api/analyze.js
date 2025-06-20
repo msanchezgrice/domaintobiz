@@ -1,9 +1,93 @@
 import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+async function analyzeDomainWithLLM(domains) {
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('⚠️ OpenAI API key not found, using basic analysis');
+    return null;
+  }
+
+  try {
+    console.log('🤖 Using AI to analyze domains:', domains);
+    
+    const prompt = `You are a domain analysis expert. Analyze these domains for business potential and rank them from best to worst.
+
+Domains to analyze: ${domains.join(', ')}
+
+For each domain, consider:
+1. Brandability (memorable, easy to spell, sounds professional)
+2. SEO potential (keyword relevance, domain authority potential)
+3. Market appeal (broad vs niche appeal, trendy keywords)
+4. Business versatility (can support multiple business models)
+5. Global appeal (pronunciation, cultural considerations)
+6. Commercial value (premium-ness, investment potential)
+
+Provide a detailed analysis with scores (0-100) for each domain and rank them. Return as JSON:
+
+{
+  "rankings": [
+    {
+      "domain": "example.com",
+      "overallScore": 85,
+      "brandability": 90,
+      "seoValue": 80,
+      "marketAppeal": 88,
+      "versatility": 85,
+      "globalAppeal": 82,
+      "commercialValue": 87,
+      "strengths": ["Memorable", "Professional sound"],
+      "weaknesses": ["Could be seen as generic"],
+      "businessSuggestions": ["Tech startup", "E-commerce platform"],
+      "reasoning": "Strong all-around domain with excellent brandability..."
+    }
+  ],
+  "bestDomain": "example.com",
+  "summary": "Overall analysis summary..."
+}
+
+Only return valid JSON, no other text.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a professional domain analyst with expertise in branding, SEO, and business strategy. Always respond with valid JSON only."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    const content = response.choices[0].message.content.trim();
+    console.log('🤖 AI analysis response received');
+    
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error('❌ Failed to parse AI response:', parseError);
+      console.log('Raw response:', content);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error('❌ AI analysis failed:', error);
+    return null;
+  }
+}
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -57,6 +141,9 @@ export default async function handler(req, res) {
 
     console.log(`🔍 Analyzing ${domains.length} domains:`, domains);
 
+    // Get AI-powered analysis first
+    const aiAnalysis = await analyzeDomainWithLLM(domains);
+
     // Proper domain analysis implementation
     const analysisResults = [];
     
@@ -87,29 +174,43 @@ export default async function handler(req, res) {
           console.log(`❌ Website check failed for ${domain}:`, error.message);
         }
         
-        // Calculate domain score based on multiple factors
+        // Use AI analysis if available, otherwise fall back to basic scoring
         let score = 0;
-        if (isValidDomain) score += 30;
-        if (!hasWebsite) score += 40; // Available domain is good
-        if (domain.length <= 12) score += 20; // Shorter is better
-        if (!domain.includes('-')) score += 10; // No hyphens is better
+        let aiDomainData = null;
         
-        // Additional scoring factors
-        const extension = domain.split('.').pop().toLowerCase();
-        if (extension === 'com') score += 15; // .com is premium
-        if (extension === 'io') score += 10; // .io is tech-friendly
-        if (extension === 'ai') score += 8; // .ai is trendy
-        
-        // Check for common words that make domains valuable
-        const domainName = domain.split('.')[0].toLowerCase();
-        const valuableKeywords = ['app', 'tech', 'ai', 'data', 'cloud', 'digital', 'smart', 'auto', 'pro', 'hub'];
-        if (valuableKeywords.some(keyword => domainName.includes(keyword))) {
-          score += 15;
+        if (aiAnalysis && aiAnalysis.rankings) {
+          aiDomainData = aiAnalysis.rankings.find(r => r.domain === domain);
+          if (aiDomainData) {
+            score = aiDomainData.overallScore;
+            console.log(`🤖 Using AI score for ${domain}: ${score}`);
+          }
         }
         
-        // Penalize very long domains
-        if (domain.length > 15) score -= 10;
-        if (domain.length > 20) score -= 20;
+        // Fallback to basic scoring if no AI analysis
+        if (!aiDomainData) {
+          console.log(`📊 Using basic scoring for ${domain}`);
+          if (isValidDomain) score += 30;
+          if (!hasWebsite) score += 40; // Available domain is good
+          if (domain.length <= 12) score += 20; // Shorter is better
+          if (!domain.includes('-')) score += 10; // No hyphens is better
+          
+          // Additional scoring factors
+          const extension = domain.split('.').pop().toLowerCase();
+          if (extension === 'com') score += 15; // .com is premium
+          if (extension === 'io') score += 10; // .io is tech-friendly
+          if (extension === 'ai') score += 8; // .ai is trendy
+          
+          // Check for common words that make domains valuable
+          const domainName = domain.split('.')[0].toLowerCase();
+          const valuableKeywords = ['app', 'tech', 'ai', 'data', 'cloud', 'digital', 'smart', 'auto', 'pro', 'hub'];
+          if (valuableKeywords.some(keyword => domainName.includes(keyword))) {
+            score += 15;
+          }
+          
+          // Penalize very long domains
+          if (domain.length > 15) score -= 10;
+          if (domain.length > 20) score -= 20;
+        }
         
         const domainAnalysis = {
           domain,
@@ -124,32 +225,52 @@ export default async function handler(req, res) {
             extension: domain.split('.').pop(),
             availability: !hasWebsite ? 'likely available' : 'taken'
           },
-          // Add breakdown for UI compatibility with more realistic scoring
-          breakdown: {
+          // Use AI breakdown if available, otherwise generate basic breakdown
+          breakdown: aiDomainData ? {
+            memorability: aiDomainData.brandability || 70,
+            brandability: aiDomainData.brandability || 70,
+            seoValue: aiDomainData.seoValue || 65,
+            marketPotential: aiDomainData.marketAppeal || 68
+          } : {
             memorability: Math.min(100, Math.max(20, 
               (domain.length <= 8 ? 80 : 50) + 
               (!domain.includes('-') ? 15 : 0) + 
               (Math.random() * 20 - 10)
             )),
             brandability: Math.min(100, Math.max(15,
-              (domainName.match(/[aeiou]/g)?.length || 0) * 8 + // Vowels make it more brandable
+              (domain.match(/[aeiou]/g)?.length || 0) * 8 + // Vowels make it more brandable
               (domain.length <= 10 ? 60 : 30) +
-              (extension === 'com' ? 20 : 5) +
+              (domain.split('.').pop() === 'com' ? 20 : 5) +
               (Math.random() * 25 - 12)
             )),
             seoValue: Math.min(100, Math.max(10,
               (!hasWebsite ? 70 : 20) + 
-              (extension === 'com' ? 25 : extension === 'org' ? 15 : 10) +
-              (valuableKeywords.some(keyword => domainName.includes(keyword)) ? 20 : 0) +
+              (domain.split('.').pop() === 'com' ? 25 : 10) +
               (Math.random() * 30 - 15)
             )),
             marketPotential: Math.min(100, Math.max(25,
               score * 0.7 + 
-              (valuableKeywords.some(keyword => domainName.includes(keyword)) ? 25 : 0) +
               (!hasWebsite ? 20 : 5) +
               (Math.random() * 35 - 17)
             ))
           },
+          // Add AI insights if available
+          ...(aiDomainData && {
+            aiInsights: {
+              strengths: aiDomainData.strengths || [],
+              weaknesses: aiDomainData.weaknesses || [],
+              businessSuggestions: aiDomainData.businessSuggestions || [],
+              reasoning: aiDomainData.reasoning || '',
+              detailedScores: {
+                brandability: aiDomainData.brandability,
+                seoValue: aiDomainData.seoValue,
+                marketAppeal: aiDomainData.marketAppeal,
+                versatility: aiDomainData.versatility,
+                globalAppeal: aiDomainData.globalAppeal,
+                commercialValue: aiDomainData.commercialValue
+              }
+            }
+          }),
           timestamp: new Date().toISOString()
         };
         
