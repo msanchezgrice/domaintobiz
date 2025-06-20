@@ -43,22 +43,12 @@ async function analyzeDomainWithLLM(domains) {
   try {
     console.log('🤖 Using AI to analyze domains:', domains);
     
-    // Enhanced prompt to analyze founder intent and business concept
-    const prompt = `You are a domain analyst and business strategist. For each domain, analyze the domain name and make your best guess as to what the founder was thinking in terms of:
+    // Concise prompt for efficient AI analysis
+    const prompt = `Analyze these domains for business potential: ${domains.join(', ')}
 
-1. BUSINESS CONCEPT: What product/service does this domain suggest?
-2. FOUNDER INTENT: What was the founder trying to communicate?
-3. VALUE PROPOSITION: What value would this business provide?
-4. TARGET DEMOGRAPHIC: Who would be interested in this?
-5. FEATURE SET: What features/services would this offer?
-6. BRAND PERSONALITY: What type of brand does this suggest?
+For each domain, analyze what business it suggests and score 0-100 for brandability, SEO, and market appeal.
 
-Domains to analyze: ${domains.join(', ')}
-
-For each domain, deeply analyze the name semantics, word combinations, implications, and likely business intent. Then score each domain 0-100 considering brandability, business potential, SEO value, and market appeal.
-
-Return JSON only:
-
+Return only valid JSON:
 {
   "rankings": [
     {
@@ -67,24 +57,24 @@ Return JSON only:
       "brandability": 90,
       "seoValue": 80,
       "marketAppeal": 88,
-      "businessConcept": "What business this domain suggests",
-      "founderIntent": "What the founder was likely thinking",
-      "valueProposition": "What value this business would provide",
-      "targetDemographic": "Who this would serve",
-      "suggestedFeatures": ["feature1", "feature2", "feature3"],
-      "brandPersonality": "Professional/Fun/Innovative etc",
-      "industryFit": "Primary industry this fits",
-      "strengths": ["Short", "Memorable"],
+      "businessConcept": "Short description of suggested business",
+      "founderIntent": "What founder was thinking",
+      "valueProposition": "Key value provided", 
+      "targetDemographic": "Primary audience",
+      "suggestedFeatures": ["feature1", "feature2"],
+      "brandPersonality": "Brand type",
+      "industryFit": "Main industry",
+      "strengths": ["key strength 1", "key strength 2"],
       "businessPotential": "High/Medium/Low",
-      "reasoning": "Brief analysis of why this domain works for this business"
+      "reasoning": "Brief why this domain works"
     }
   ],
-  "bestDomain": "example.com",
+  "bestDomain": "best.com",
   "recommendation": {
-    "domain": "best domain",
-    "businessConcept": "recommended business concept",
-    "whyBest": "2-3 reasons why this is the best choice",
-    "marketOpportunity": "market opportunity explanation"
+    "domain": "best domain name",
+    "businessConcept": "business concept",
+    "whyBest": "2-3 key reasons",
+    "marketOpportunity": "opportunity summary"
   }
 }`;
 
@@ -94,11 +84,11 @@ Return JSON only:
 
     try {
       const response = await openaiClient.chat.completions.create({
-                        model: "gpt-4.1-2025-04-14", // Latest GPT-4 model
+        model: "gpt-4.1-2025-04-14", // Latest GPT-4 model
         messages: [
           {
             role: "system",
-            content: "You are a domain analyst. Always return valid JSON only, no other text."
+            content: "You are a domain analyst. Always return valid JSON only, no other text. Keep responses concise but complete."
           },
           {
             role: "user",
@@ -106,7 +96,7 @@ Return JSON only:
           }
         ],
         temperature: 0.3, // Lower temperature for faster, more consistent responses
-        max_tokens: 1000 // Reduced token limit
+        max_tokens: 4000 // Increased to accommodate full responses for multiple domains
       }, {
         signal: controller.signal
       });
@@ -116,15 +106,48 @@ Return JSON only:
       const content = response.choices[0].message.content.trim();
       console.log('🤖 AI analysis response received');
       
-      // Clean up response - remove any markdown formatting
-      const jsonContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      // Clean up response - remove any markdown formatting and extra text
+      let jsonContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      
+      // Try to extract JSON if there's extra text
+      const jsonStart = jsonContent.indexOf('{');
+      const jsonEnd = jsonContent.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        jsonContent = jsonContent.substring(jsonStart, jsonEnd + 1);
+      }
       
       try {
-        return JSON.parse(jsonContent);
+        const parsed = JSON.parse(jsonContent);
+        
+        // Validate the structure
+        if (!parsed.rankings || !Array.isArray(parsed.rankings)) {
+          console.error('❌ Invalid AI response structure: missing rankings array');
+          return null;
+        }
+        
+        return parsed;
       } catch (parseError) {
         console.error('❌ Failed to parse AI response:', parseError);
-        console.log('Raw response:', content);
-        return null;
+        console.log('Raw response length:', content.length);
+        console.log('Cleaned JSON content length:', jsonContent.length);
+        console.log('First 500 chars:', content.substring(0, 500));
+        console.log('Last 500 chars:', content.substring(Math.max(0, content.length - 500)));
+        
+        // Try to fix common JSON issues
+        try {
+          // Remove trailing commas and fix quotes
+          let fixedJson = jsonContent
+            .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+            .replace(/'/g, '"') // Replace single quotes with double quotes
+            .replace(/(\w+):/g, '"$1":'); // Add quotes around property names
+          
+          const fixedParsed = JSON.parse(fixedJson);
+          console.log('✅ Successfully fixed and parsed JSON');
+          return fixedParsed;
+        } catch (fixError) {
+          console.error('❌ Could not fix JSON:', fixError);
+          return null;
+        }
       }
     } catch (requestError) {
       clearTimeout(timeoutId);
