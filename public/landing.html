@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DomainGenius - AI-Powered Business Website Generator</title>
+    <title>DomainToBiz - AI-Powered Business Website Generator</title>
     <style>
         * {
             box-sizing: border-box;
@@ -18,161 +18,56 @@
             overflow-x: hidden;
         }
         
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #5730ec;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 30px;
-            align-items: center;
-        }
-        
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-        
-        .nav-links a:hover {
-            color: #5730ec;
-        }
-        
-        .cta-btn {
-            background: #5730ec;
-            color: white;
-            padding: 10px 24px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .cta-btn:hover {
-            background: #4520dc;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(87, 48, 236, 0.3);
-        }
-        
-        /* Hero Section */
         .hero {
-            margin-top: 80px;
-            padding: 80px 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: float 20s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            50% { transform: translate(-30px, -30px) rotate(180deg); }
-        }
-        
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: 80px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         
         .hero h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            animation: fadeInUp 0.8s ease;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .hero p {
-            font-size: 20px;
-            margin-bottom: 40px;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
             opacity: 0.9;
-            animation: fadeInUp 0.8s ease 0.2s;
-            animation-fill-mode: both;
+            max-width: 600px;
         }
         
-        .hero-buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            animation: fadeInUp 0.8s ease 0.4s;
-            animation-fill-mode: both;
-        }
-        
-        .btn-primary {
+        .cta-button {
+            display: inline-block;
             background: white;
-            color: #5730ec;
-            padding: 14px 32px;
-            border-radius: 8px;
+            color: #667eea;
+            padding: 15px 40px;
+            border-radius: 50px;
             text-decoration: none;
             font-weight: 600;
-            font-size: 18px;
-            transition: all 0.3s;
-            display: inline-block;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
         }
         
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            padding: 14px 32px;
-            border: 2px solid white;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 18px;
-            transition: all 0.3s;
-            display: inline-block;
-        }
-        
-        .btn-secondary:hover {
-            background: white;
-            color: #5730ec;
-        }
-        
-        /* Features Section */
         .features {
             padding: 80px 20px;
-            background: #f8f9fa;
+            background: #f8fafc;
         }
         
         .container {
@@ -180,543 +75,93 @@
             margin: 0 auto;
         }
         
-        .section-header {
+        .features h2 {
             text-align: center;
-            margin-bottom: 60px;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #334155;
         }
         
-        .section-header h2 {
-            font-size: 36px;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        
-        .section-header p {
-            font-size: 18px;
-            color: #666;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .features-grid {
+        .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
         }
         
-        .feature-card {
+        .feature {
             background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             text-align: center;
+            transition: transform 0.3s ease;
         }
         
-        .feature-card:hover {
+        .feature:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
         }
         
         .feature-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
+            font-size: 3rem;
+            margin-bottom: 1rem;
         }
         
-        .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #333;
+        .feature h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #667eea;
         }
         
-        .feature-card p {
-            color: #666;
-            line-height: 1.8;
-        }
-        
-        /* How It Works */
-        .how-it-works {
-            padding: 80px 20px;
-            background: white;
-        }
-        
-        .steps-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            position: relative;
-        }
-        
-        .step {
-            text-align: center;
-            position: relative;
-        }
-        
-        .step-number {
-            width: 60px;
-            height: 60px;
-            background: #5730ec;
+        .footer {
+            background: #1e293b;
             color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0 auto 20px;
-        }
-        
-        .step h3 {
-            font-size: 20px;
-            margin-bottom: 10px;
-            color: #333;
-        }
-        
-        .step p {
-            color: #666;
-        }
-        
-        /* Stats Section */
-        .stats {
-            padding: 80px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
             text-align: center;
-        }
-        
-        .stat-item h3 {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        
-        .stat-item p {
-            font-size: 18px;
-            opacity: 0.9;
-        }
-        
-        /* CTA Section */
-        .cta-section {
-            padding: 100px 20px;
-            background: #f8f9fa;
-            text-align: center;
-        }
-        
-        .cta-section h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        
-        .cta-section p {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 40px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        /* Footer */
-        footer {
-            background: #1a1a2e;
-            color: white;
             padding: 40px 20px;
-            text-align: center;
         }
         
-        footer p {
-            opacity: 0.8;
-        }
-        
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Responsive */
         @media (max-width: 768px) {
             .hero h1 {
-                font-size: 36px;
+                font-size: 2.5rem;
             }
             
-            .hero p {
-                font-size: 18px;
-            }
-            
-            .hero-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .features-grid {
+            .feature-grid {
                 grid-template-columns: 1fr;
-                gap: 30px;
-            }
-            
-            .nav-links {
-                display: none;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-container">
-            <div class="logo">🚀 DomainGenius</div>
-            <div class="nav-links">
-                <a href="#home" class="nav-link active" data-section="home">Home</a>
-                <a href="/app" class="nav-link" data-section="analyzer">Analyzer</a>
-                <a href="/projects.html" class="nav-link" data-section="projects">Projects</a>
-                <a href="/agents.html" class="nav-link" data-section="agents">Agent Monitor</a>
-                <a href="/app" class="cta-btn nav-link">Launch App</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Turn Any Domain Into a Thriving Business in Minutes</h1>
-            <p>Our AI analyzes domains, creates complete business strategies, and automatically builds professional websites - all with zero coding required.</p>
-            <div class="hero-buttons">
-                <a href="/app" class="btn-primary">Start Building Now</a>
-                <a href="#features" class="btn-secondary">See How It Works</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features" id="features">
+    <div class="hero">
+        <h1>Transform Any Domain Into a Business</h1>
+        <p>AI-powered domain analysis and automated website generation. Turn your domain ideas into professional business websites in minutes.</p>
+        <a href="/app" class="cta-button">Begin Domain Analysis</a>
+    </div>
+    
+    <div class="features">
         <div class="container">
-            <div class="section-header">
-                <h2>Everything You Need to Launch</h2>
-                <p>From domain analysis to live website - our AI handles it all</p>
-            </div>
-            
-            <div class="features-grid">
-                <div class="feature-card">
+            <h2>How It Works</h2>
+            <div class="feature-grid">
+                <div class="feature">
                     <div class="feature-icon">🔍</div>
-                    <h3>Smart Domain Analysis</h3>
-                    <p>Our AI analyzes WHOIS data, DNS records, and existing content to evaluate each domain's potential and rank them by business viability.</p>
+                    <h3>Analyze Domains</h3>
+                    <p>Our AI analyzes your domains and generates comprehensive business strategies based on market opportunities.</p>
                 </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">🧠</div>
-                    <h3>AI Business Strategy</h3>
-                    <p>Advanced reasoning models create complete business plans including positioning, target customers, revenue models, and go-to-market strategies.</p>
-                </div>
-                
-                <div class="feature-card">
+                <div class="feature">
                     <div class="feature-icon">🎨</div>
-                    <h3>Automatic Web Design</h3>
-                    <p>AI agents collaborate to design, write content, develop, and deploy beautiful, conversion-optimized websites tailored to your business.</p>
+                    <h3>Generate Websites</h3>
+                    <p>Automatically create beautiful, professional websites with custom designs, content, and functionality.</p>
                 </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Real-Time Progress</h3>
-                    <p>Watch AI agents work together in real-time, with detailed logs showing their thinking process and decisions at every step.</p>
-                </div>
-                
-                <div class="feature-card">
+                <div class="feature">
                     <div class="feature-icon">🚀</div>
-                    <h3>Instant Deployment</h3>
-                    <p>Your website is automatically deployed and ready to receive visitors, with built-in forms, analytics, and SEO optimization.</p>
+                    <h3>Launch & Scale</h3>
+                    <p>Deploy your websites instantly and track their performance with built-in analytics and optimization tools.</p>
                 </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">📈</div>
-                    <h3>Project Management</h3>
-                    <p>Manage all your AI-generated websites from one dashboard, track performance, and generate new sites with a single click.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works" id="how">
-        <div class="container">
-            <div class="section-header">
-                <h2>From Domain to Business in 4 Steps</h2>
-                <p>Our AI-powered process turns your domain ideas into reality</p>
-            </div>
-            
-            <div class="steps-container">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Enter Domains</h3>
-                    <p>Simply input a list of domain names you're considering for your business</p>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>AI Analysis</h3>
-                    <p>Our AI evaluates each domain's potential based on multiple factors</p>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Strategy Creation</h3>
-                    <p>Advanced AI creates a complete business strategy and brand identity</p>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <h3>Website Launch</h3>
-                    <p>AI agents build and deploy your professional website automatically</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Stats Section -->
-    <section class="stats" id="stats">
-        <div class="container">
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <h3>5 min</h3>
-                    <p>Average time to launch</p>
-                </div>
-                <div class="stat-item">
-                    <h3>4 AI</h3>
-                    <p>Specialized agents</p>
-                </div>
-                <div class="stat-item">
-                    <h3>100%</h3>
-                    <p>Automated process</p>
-                </div>
-                <div class="stat-item">
-                    <h3>$0</h3>
-                    <p>Coding required</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="container">
-            <h2>Ready to Launch Your Next Business?</h2>
-            <p>Join innovative entrepreneurs using AI to build businesses faster than ever before</p>
-            <a href="/app" class="btn-primary" style="font-size: 20px; padding: 16px 40px;">Start Building for Free</a>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 DomainGenius. Powered by advanced AI technology.</p>
-        </div>
-    </footer>
-
-    <!-- Dynamic Content Sections -->
-    <div id="dynamic-content" style="display: none;">
-        <div class="content-section" id="analyzer-section">
-            <div class="container" style="padding-top: 100px;">
-                <iframe id="analyzer-frame" src="/app" style="width: 100%; height: calc(100vh - 120px); border: none; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"></iframe>
-            </div>
-        </div>
-        
-        <div class="content-section" id="projects-section">
-            <div class="container" style="padding-top: 100px;">
-                <iframe id="projects-frame" src="/projects.html" style="width: 100%; height: calc(100vh - 120px); border: none; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"></iframe>
-            </div>
-        </div>
-        
-        <div class="content-section" id="agents-section">
-            <div class="container" style="padding-top: 100px;">
-                <iframe id="agents-frame" src="/agents.html" style="width: 100%; height: calc(100vh - 120px); border: none; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"></iframe>
             </div>
         </div>
     </div>
-
-    <script>
-        // Navigation state management
-        const navigationState = {
-            currentSection: 'home',
-            contentCache: new Map(),
-            homeContent: null
-        };
-
-        // Initialize navigation
-        document.addEventListener('DOMContentLoaded', function() {
-            // Cache home content
-            navigationState.homeContent = document.body.innerHTML;
-            
-            // Setup navigation event listeners
-            setupNavigation();
-            
-            // Setup scroll animations for home page
-            setupScrollAnimations();
-            
-            // Handle browser back/forward
-            window.addEventListener('popstate', handlePopState);
-        });
-
-        function setupNavigation() {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const section = this.getAttribute('data-section');
-                    const href = this.getAttribute('href');
-                    
-                    // Handle external URLs that need page navigation
-                    if (href && (href.startsWith('/app') || href.startsWith('/projects') || href.startsWith('/agents'))) {
-                        window.location.href = href;
-                    } else {
-                        navigateToSection(section);
-                    }
-                });
-            });
-        }
-
-        function navigateToSection(section) {
-            if (navigationState.currentSection === section) return;
-            
-            // Update navigation state
-            updateNavActive(section);
-            navigationState.currentSection = section;
-            
-            // Update URL without reload
-            history.pushState({ section }, '', `#${section}`);
-            
-            if (section === 'home') {
-                showHomeContent();
-            } else {
-                showDynamicContent(section);
-            }
-        }
-
-        function updateNavActive(section) {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('data-section') === section) {
-                    link.classList.add('active');
-                }
-            });
-        }
-
-        function showHomeContent() {
-            document.body.innerHTML = navigationState.homeContent;
-            setupNavigation(); // Re-setup event listeners
-            setupScrollAnimations();
-        }
-
-        function showDynamicContent(section) {
-            const dynamicContent = document.getElementById('dynamic-content');
-            const targetSection = document.getElementById(`${section}-section`);
-            
-            if (targetSection) {
-                // Hide all landing page content except nav
-                hideHomeContent();
-                
-                // Show dynamic content
-                dynamicContent.style.display = 'block';
-                
-                // Hide all sections, show target
-                document.querySelectorAll('.content-section').forEach(sec => {
-                    sec.style.display = 'none';
-                });
-                targetSection.style.display = 'block';
-                
-                // Ensure iframe is loaded
-                const iframe = targetSection.querySelector('iframe');
-                if (iframe && !iframe.src) {
-                    iframe.src = iframe.getAttribute('data-src');
-                }
-            }
-        }
-
-        function hideHomeContent() {
-            // Hide main content sections but keep nav
-            const sectionsToHide = ['hero', 'features', 'how-it-works', 'stats', 'cta-section'];
-            sectionsToHide.forEach(sectionClass => {
-                const section = document.querySelector(`.${sectionClass}`);
-                if (section) section.style.display = 'none';
-            });
-            
-            const footer = document.querySelector('footer');
-            if (footer) footer.style.display = 'none';
-        }
-
-        function handlePopState(event) {
-            const section = event.state?.section || 'home';
-            navigationState.currentSection = section;
-            updateNavActive(section);
-            
-            if (section === 'home') {
-                showHomeContent();
-            } else {
-                showDynamicContent(section);
-            }
-        }
-
-        function setupScrollAnimations() {
-            // Smooth scrolling for anchor links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    const href = this.getAttribute('href');
-                    if (href.startsWith('#') && !this.hasAttribute('data-section')) {
-                        e.preventDefault();
-                        const target = document.querySelector(href);
-                        if (target) {
-                            target.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            });
-                        }
-                    }
-                });
-            });
-
-            // Add scroll animations
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -100px 0px'
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.animation = 'fadeInUp 0.8s ease forwards';
-                    }
-                });
-            }, observerOptions);
-
-            // Observe all feature cards and steps
-            document.querySelectorAll('.feature-card, .step').forEach(el => {
-                observer.observe(el);
-            });
-        }
-
-        // Handle initial hash
-        window.addEventListener('load', function() {
-            const hash = window.location.hash.substring(1);
-            if (hash && hash !== 'home') {
-                navigateToSection(hash);
-            }
-        });
-    </script>
+    
+    <div class="footer">
+        <p>&copy; 2025 DomainToBiz. Transform domains into businesses with AI.</p>
+    </div>
 </body>
 </html>

@@ -70,11 +70,13 @@ function serveWebsiteContent(res, website, file) {
   switch (requestedFile) {
     case 'styles.css':
       res.setHeader('Content-Type', 'text/css');
-      return res.status(200).send(website.website_css || getDefaultCSS());
+      // Always use the beautiful new CSS template for better styling
+      return res.status(200).send(getDefaultCSS());
     
     case 'script.js':
       res.setHeader('Content-Type', 'application/javascript');
-      return res.status(200).send(website.website_js || getDefaultJS());
+      // Always use the enhanced JavaScript for better functionality
+      return res.status(200).send(getDefaultJS());
     
     case 'manifest.json':
       res.setHeader('Content-Type', 'application/json');
@@ -84,14 +86,15 @@ function serveWebsiteContent(res, website, file) {
         start_url: "/",
         display: "standalone",
         background_color: "#ffffff",
-        theme_color: "#3B82F6"
+        theme_color: "#6366F1"
       };
       return res.status(200).json(manifest);
     
     default:
       // Serve HTML for all other requests
       res.setHeader('Content-Type', 'text/html');
-      return res.status(200).send(website.website_html || getDefaultHTML(website));
+      // Always use the beautiful new HTML template
+      return res.status(200).send(getDefaultHTML(website));
   }
 }
 
