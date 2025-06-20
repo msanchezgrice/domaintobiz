@@ -466,9 +466,9 @@
             
             card.innerHTML = `
                 <div class="project-preview">
-                    <iframe src="${project.url}" loading="lazy"></iframe>
+                    <iframe src="${project.deploymentUrl}" loading="lazy"></iframe>
                     <div class="project-preview-overlay">
-                        <a href="${project.url}" target="_blank" class="preview-btn">View Live Site</a>
+                        <a href="${project.deploymentUrl}" target="_blank" class="preview-btn">View Live Site</a>
                     </div>
                 </div>
                 <div class="project-info">
@@ -496,7 +496,7 @@
                     </div>
                     
                     <div class="project-actions">
-                        <a href="${project.url}" target="_blank" class="btn btn-small">Visit Site</a>
+                        <a href="${project.deploymentUrl}" target="_blank" class="btn btn-small">Visit Site</a>
                         <button class="btn btn-secondary btn-small" onclick="viewDetails('${project.id}')">Details</button>
                     </div>
                 </div>
