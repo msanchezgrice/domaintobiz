@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       console.log(`💬 User feedback for regeneration: ${userComments}`);
     }
 
-    // Use the enhanced BusinessStrategyEngine
+    // Use the enhanced BusinessStrategyEngine with timeout
     let strategy;
     
     try {
@@ -64,8 +64,16 @@ export default async function handler(req, res) {
       const { BusinessStrategyEngine } = await import('../src/models/BusinessStrategyEngine.js');
       const strategyEngine = new BusinessStrategyEngine();
       
-      // Generate strategy with enhanced domain analysis
-      strategy = await strategyEngine.generateStrategy(domainAnalysis);
+      // Add API-level timeout (50 seconds to stay under Vercel's 60s limit)
+      const strategyTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Strategy API timeout after 50 seconds')), 50000);
+      });
+      
+      // Generate strategy with enhanced domain analysis and timeout
+      strategy = await Promise.race([
+        strategyEngine.generateStrategy(domainAnalysis),
+        strategyTimeout
+      ]);
       
       // Add regeneration context if provided
       if (regenerate && userComments) {
@@ -81,8 +89,13 @@ export default async function handler(req, res) {
       console.log('✅ Strategy generated successfully using BusinessStrategyEngine');
       
     } catch (error) {
-      console.error('❌ Error generating strategy with BusinessStrategyEngine:', error);
-      console.log('🔄 Falling back to basic strategy');
+      if (error.message.includes('timeout')) {
+        console.error('❌ Strategy generation timed out:', error.message);
+        console.log('🔄 Using enhanced fallback strategy due to timeout');
+      } else {
+        console.error('❌ Error generating strategy with BusinessStrategyEngine:', error);
+        console.log('🔄 Falling back to basic strategy');
+      }
       
       strategy = {
         domain: domainAnalysis.domain,

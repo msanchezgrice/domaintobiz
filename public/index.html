@@ -1091,7 +1091,11 @@
                                 <a href="${project.deploymentUrl}" target="_blank" class="btn btn-small" style="background: #4caf50; color: white;">
                                     View Live Site
                                 </a>
-                            ` : ''}
+                            ` : `
+                                <button class="btn btn-small" style="background: #5730ec; color: white;" onclick="generateWebsite('${project.domain}', '${project.id}')">
+                                    Generate Website
+                                </button>
+                            `}
                             <button class="btn-secondary btn-small" onclick="viewDetails('${project.id}')">
                                 Details
                             </button>
@@ -1172,6 +1176,112 @@
                 window.open(`/project-details.html?id=${projectId}&domain=${encodeURIComponent(project.domain)}`, '_blank');
             } else {
                 alertDialog('Project details not found. Please refresh and try again.', 'error', 'Details Not Found');
+            }
+        }
+
+        async function generateWebsite(domain, projectId) {
+            try {
+                // Show loading dialog
+                showDialog({
+                    type: 'info',
+                    title: 'Generating Website',
+                    message: `Starting website generation for ${domain}...`,
+                    actions: [
+                        {
+                            text: 'Cancel',
+                            type: 'dialog-btn-secondary',
+                            callback: () => {}
+                        }
+                    ]
+                });
+
+                const response = await fetch('/api/execute-v2', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        domains: [domain],
+                        projectId: projectId,
+                        generateWebsite: true
+                    })
+                });
+
+                // Read response once and handle both success/error cases
+                let data;
+                let responseText;
+                
+                try {
+                    responseText = await response.text();
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse response:', parseError);
+                    throw new Error(`Invalid response from server (${response.status}): ${responseText || 'Unknown error'}`);
+                }
+                
+                if (!response.ok) {
+                    const errorMessage = data.message || data.error || `Server error (${response.status})`;
+                    throw new Error(errorMessage);
+                }
+
+                if (data.success) {
+                    // Refresh projects to show the new website
+                    loadProjectsFromAPI(false);
+                    
+                    showDialog({
+                        type: 'success',
+                        title: 'Website Generated!',
+                        message: `Website has been successfully generated for ${domain}! You can now view it in your projects.`,
+                        actions: [
+                            {
+                                text: 'View Website',
+                                type: 'dialog-btn-primary',
+                                callback: () => {
+                                    if (data.result?.websiteUrl) {
+                                        window.open(data.result.websiteUrl, '_blank');
+                                    }
+                                }
+                            },
+                            {
+                                text: 'Close',
+                                type: 'dialog-btn-secondary',
+                                callback: () => {}
+                            }
+                        ]
+                    });
+                } else {
+                    throw new Error(data.error || 'Website generation failed');
+                }
+
+            } catch (error) {
+                console.error('Manual website generation error:', error);
+                
+                let errorMessage = 'Website generation failed. Please try again.';
+                if (error.message.includes('timeout')) {
+                    errorMessage = 'Website generation timed out. Please try again.';
+                } else if (error.message.includes('500')) {
+                    errorMessage = 'Server error during website generation. Please try again in a moment.';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                showDialog({
+                    type: 'error',
+                    title: 'Generation Failed',
+                    message: errorMessage,
+                    actions: [
+                        {
+                            text: 'Try Again',
+                            type: 'dialog-btn-primary',
+                            callback: () => generateWebsite(domain, projectId)
+                        },
+                        {
+                            text: 'Close',
+                            type: 'dialog-btn-secondary',
+                            callback: () => {}
+                        }
+                    ]
+                });
             }
         }
 
@@ -1371,19 +1481,22 @@
                 
                 console.log('🔍 Execute response status:', response.status);
                 
-                if (!response.ok) {
-                    let errorMessage = `Server error (${response.status})`;
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (parseError) {
-                        const errorText = await response.text();
-                        errorMessage = errorText || errorMessage;
-                    }
-                    throw new Error(errorMessage);
+                // Read response once and handle both success/error cases
+                let data;
+                let responseText;
+                
+                try {
+                    responseText = await response.text();
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse response:', parseError);
+                    throw new Error(`Invalid response from server (${response.status}): ${responseText || 'Unknown error'}`);
                 }
                 
-                const data = await response.json();
+                if (!response.ok) {
+                    const errorMessage = data.message || data.error || `Server error (${response.status})`;
+                    throw new Error(errorMessage);
+                }
                 console.log('📊 Execute response data:', data);
                 
                 if (data.success) {

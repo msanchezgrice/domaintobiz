@@ -18,43 +18,58 @@ export class BusinessStrategyEngine {
     
     const context = this.buildContext(domainAnalysis);
     
+    // Add overall timeout for strategy generation (45 seconds)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Strategy generation timeout after 45 seconds')), 45000);
+    });
+    
+    try {
+      return await Promise.race([
+        this.generateStrategyInternal(context, tracker),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      if (error.message.includes('timeout')) {
+        console.warn('⚠️ Strategy generation timed out, using enhanced fallback');
+        return this.generateEnhancedFallbackStrategy(context, domainAnalysis);
+      }
+      throw error;
+    }
+  }
+
+  async generateStrategyInternal(context, tracker = null) {
     if (tracker) {
       tracker.addThinking('Analyzing domain characteristics for business model', {
-        domain: domainAnalysis.domain,
+        domain: context.domain,
         hasExistingSite: context.hasExistingSite,
         domainScore: context.score,
         keyFactors: ['domain name semantics', 'existing content analysis', 'market positioning opportunities']
       });
     }
     
-    // Generate business model
+    // Generate business model (most critical)
     if (tracker) tracker.addThinking('Defining business model using Claude reasoning', {
       approach: 'Analyzing domain for business type, revenue model, and value proposition'
     });
-    const businessModel = await this.defineBusinessModel(context, tracker);
+    const businessModel = await this.defineBusinessModelWithTimeout(context, tracker);
     
-    // Generate brand strategy
-    if (tracker) tracker.addThinking('Creating brand strategy with GPT-4', {
-      approach: 'Developing positioning, values, and differentiation strategy'
+    // Generate other components with reduced complexity for speed
+    if (tracker) tracker.addThinking('Creating streamlined brand and MVP strategy', {
+      approach: 'Rapid strategy generation optimized for performance'
     });
-    const brandStrategy = await this.defineBrandStrategy(context, businessModel, tracker);
     
-    // Generate MVP plan
-    if (tracker) tracker.addThinking('Defining MVP scope for rapid market validation', {
-      approach: 'Prioritizing core features for 30-day launch timeline'
-    });
-    const mvpPlan = await this.defineMVPScope(context, businessModel, brandStrategy, tracker);
+    const [brandStrategy, mvpPlan] = await Promise.all([
+      this.defineStreamlinedBrandStrategy(context, businessModel, tracker),
+      this.defineStreamlinedMVPScope(context, businessModel, tracker)
+    ]);
 
-    // Create implementation plan
-    if (tracker) tracker.addThinking('Creating detailed implementation plan for AI agents', {
-      approach: 'Breaking down strategy into actionable tasks for each agent'
-    });
-    const implementation = await this.createImplementationPlan({
-      domain: domainAnalysis.domain,
+    // Create lightweight implementation plan
+    const implementation = this.createLightweightImplementationPlan({
+      domain: context.domain,
       businessModel,
       brandStrategy,
       mvpPlan
-    }, tracker);
+    });
 
     const strategy = {
       domain: domainAnalysis.domain,
@@ -80,6 +95,229 @@ export class BusinessStrategyEngine {
     }, null, 2));
 
     return strategy;
+  }
+
+  async defineBusinessModelWithTimeout(context, tracker = null) {
+    const timeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Business model generation timeout')), 15000);
+    });
+    
+    try {
+      return await Promise.race([
+        this.defineBusinessModel(context, tracker),
+        timeout
+      ]);
+    } catch (error) {
+      if (error.message.includes('timeout')) {
+        console.warn('⚠️ Business model generation timed out, using AI insights fallback');
+        return this.createFallbackBusinessModel(context);
+      }
+      throw error;
+    }
+  }
+
+  async defineStreamlinedBrandStrategy(context, businessModel, tracker = null) {
+    // Simplified brand strategy without full AI generation
+    return {
+      positioning: businessModel.valueProposition || `Leading solution for ${context.domainName} needs`,
+      brandPromise: 'Reliable, expert guidance and solutions',
+      values: ['trust', 'expertise', 'innovation', 'transparency', 'reliability'],
+      personality: ['professional', 'knowledgeable', 'helpful', 'trustworthy', 'modern'],
+      visualIdentity: {
+        description: 'Clean, professional design with modern aesthetics',
+        colorPalette: 'Primary blue (#2563eb), accent green (#10b981), neutral grays',
+        typography: 'Clean sans-serif fonts for readability and modernity',
+        imagery: 'Professional, authentic imagery that builds trust',
+        logoDirection: 'Simple, memorable mark that represents the domain concept'
+      },
+      toneOfVoice: {
+        description: 'Professional yet approachable, expert but accessible',
+        doSay: ['evidence-based', 'proven solutions', 'expert guidance'],
+        dontSay: ['overly technical jargon', 'unsubstantiated claims']
+      },
+      messagingFramework: {
+        primaryMessage: businessModel.valueProposition || 'Expert solutions for your needs',
+        secondaryMessages: ['Trusted by professionals', 'Proven results'],
+        audienceSpecific: {
+          mainAudience: `Tailored solutions for ${businessModel.targetMarket}`,
+          secondaryAudience: 'Professional guidance for everyone'
+        }
+      },
+      contentThemes: ['expert insights', 'practical solutions', 'industry trends', 'success stories'],
+      trustBuilders: ['expert credentials', 'proven results', 'customer testimonials'],
+      differentiation: businessModel.competitiveAdvantage || 'Unique expertise and proven methodology'
+    };
+  }
+
+  async defineStreamlinedMVPScope(context, businessModel, tracker = null) {
+    // Generate features based on business model and domain insights
+    const coreFeatures = this.generateCoreFeatures(context, businessModel);
+    
+    return {
+      coreFeatures,
+      userJourney: {
+        discovery: 'Search engines, direct navigation, referrals',
+        landing: 'Clear value proposition with immediate credibility',
+        engagement: 'Interactive content and clear calls to action',
+        conversion: 'Contact forms, service inquiries, newsletter signup',
+        retention: 'Regular content updates and follow-up communication'
+      },
+      contentStrategy: {
+        launchContent: ['homepage content', 'service descriptions', 'about page', 'contact information'],
+        contentPillars: ['expertise', 'solutions', 'results'],
+        initialPages: ['home', 'services', 'about', 'contact']
+      },
+      technicalStack: {
+        frontend: 'Modern HTML5, CSS3, JavaScript',
+        backend: 'Static site with form handling',
+        database: 'Contact form data storage',
+        hosting: 'Vercel/Netlify',
+        analytics: 'Google Analytics',
+        integrations: ['contact forms', 'email notifications']
+      },
+      designRequirements: {
+        pageTypes: ['landing page', 'service pages', 'contact page'],
+        components: ['navigation', 'hero section', 'feature grid', 'contact form'],
+        responsiveNeeds: 'Mobile-first responsive design',
+        brandAlignment: 'Reflects professional and trustworthy brand'
+      },
+      successMetrics: {
+        traffic: '100+ unique visitors in first month',
+        engagement: '2+ pages per session',
+        conversion: '5% contact form completion rate',
+        revenue: 'First inquiries within 30 days'
+      }
+    };
+  }
+
+  createLightweightImplementationPlan(strategy) {
+    return {
+      landingPage: {
+        sections: ['hero', 'features', 'about', 'contact'],
+        ctaPlacement: ['hero', 'features', 'footer'],
+        formsNeeded: ['contact', 'newsletter']
+      },
+      designSpecs: {
+        colorPalette: strategy.brandStrategy.visualIdentity.colorPalette,
+        typography: strategy.brandStrategy.visualIdentity.typography,
+        layout: 'modern responsive grid'
+      },
+      technicalRequirements: {
+        framework: 'HTML/CSS/JS',
+        features: strategy.mvpPlan.coreFeatures.map(f => f.name),
+        integrations: ['contact forms', 'analytics']
+      },
+      agentTasks: {
+        design: 'Create visual design system and layouts',
+        content: 'Generate all website copy and content',
+        development: 'Build responsive website with all features',
+        deployment: 'Deploy and configure hosting'
+      }
+    };
+  }
+
+  generateCoreFeatures(context, businessModel) {
+    const features = [
+      {
+        name: 'Professional Landing Page',
+        description: 'Modern, responsive homepage that clearly communicates value proposition',
+        priority: 'high',
+        timeToImplement: '2 days'
+      },
+      {
+        name: 'Service Overview',
+        description: 'Detailed explanation of services and solutions offered',
+        priority: 'high',
+        timeToImplement: '1 day'
+      },
+      {
+        name: 'Contact System',
+        description: 'Professional contact form with email notifications',
+        priority: 'high',
+        timeToImplement: '1 day'
+      },
+      {
+        name: 'About Section',
+        description: 'Credibility-building information about expertise and background',
+        priority: 'medium',
+        timeToImplement: '1 day'
+      }
+    ];
+
+    // Add domain-specific features based on AI insights
+    if (context.aiInsights?.suggestedFeatures) {
+      context.aiInsights.suggestedFeatures.slice(0, 2).forEach((feature, index) => {
+        features.push({
+          name: feature,
+          description: `${feature} functionality tailored to ${context.domainName}`,
+          priority: 'medium',
+          timeToImplement: '2 days'
+        });
+      });
+    }
+
+    return features;
+  }
+
+  createFallbackBusinessModel(context) {
+    // Enhanced fallback using AI insights if available
+    const aiInsights = context.aiInsights || {};
+    
+    return {
+      domainMeaning: aiInsights.businessConcept || `Professional services related to ${context.domainName}`,
+      businessConcept: aiInsights.businessConcept || `Expert ${context.domainName} solutions and consulting`,
+      type: aiInsights.industryFit || 'Professional Services',
+      industry: aiInsights.industryFit || 'Consulting',
+      secondaryIndustries: ['Technology', 'Business Services'],
+      revenueModel: 'service-based',
+      revenueStreams: ['consulting services', 'premium content', 'training programs'],
+      valueProposition: aiInsights.valueProposition || `Expert ${context.domainName} guidance and solutions`,
+      problemSolved: `Challenges and concerns related to ${context.domainName}`,
+      targetMarket: aiInsights.targetDemographic || 'Professionals seeking expert guidance',
+      targetPersona: aiInsights.targetDemographic || 'Working professionals who need expert assistance',
+      monetizationTimeline: '1-3 months',
+      keyMetrics: ['client inquiries', 'consultation bookings', 'content engagement'],
+      competitiveAdvantage: aiInsights.strengths?.join(', ') || 'Specialized expertise and professional approach'
+    };
+  }
+
+  generateEnhancedFallbackStrategy(context, domainAnalysis) {
+    const businessModel = this.createFallbackBusinessModel(context);
+    const brandStrategy = {
+      positioning: businessModel.valueProposition,
+      brandPromise: 'Professional expertise and reliable solutions',
+      values: ['trust', 'expertise', 'results', 'professionalism'],
+      personality: ['knowledgeable', 'reliable', 'professional', 'helpful']
+    };
+    
+    const mvpPlan = {
+      coreFeatures: this.generateCoreFeatures(context, businessModel),
+      technicalStack: {
+        frontend: 'HTML/CSS/JavaScript',
+        hosting: 'Vercel',
+        analytics: 'Google Analytics'
+      }
+    };
+
+    return {
+      domain: domainAnalysis.domain,
+      businessModel,
+      brandStrategy,
+      mvpScope: mvpPlan,
+      mvpPlan,
+      implementation: this.createLightweightImplementationPlan({
+        domain: domainAnalysis.domain,
+        businessModel,
+        brandStrategy,
+        mvpPlan
+      }),
+      targetMarket: businessModel.targetMarket,
+      valueProposition: businessModel.valueProposition,
+      industry: businessModel.industry,
+      revenueModel: businessModel.revenueModel,
+      fallback: true,
+      fastGeneration: true
+    };
   }
 
   buildContext(domainAnalysis) {
@@ -169,9 +407,9 @@ export class BusinessStrategyEngine {
     `;
 
     const response = await this.anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-3-haiku-20240307', // Faster model
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1500
+      max_tokens: 800 // Reduced for faster response
     });
 
     const businessModel = this.parseJSONResponse(response.content[0].text, 'business model', {
