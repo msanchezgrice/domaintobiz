@@ -198,36 +198,36 @@ export class ContentAgent {
   async generateSectionContent(section, context) {
     const sectionGuidelines = {
       hero: {
-        goal: 'Create a compelling hero section that immediately communicates value and drives engagement',
-        structure: 'Headline, subheadline, value proposition, primary CTA, supporting elements'
+        goal: 'Create irresistible hero copy that immediately grabs attention and promises a valuable outcome',
+        structure: 'Benefit-driven headline, pain-aware subheadline, urgency-creating CTAs that demand action'
       },
       features: {
-        goal: 'Highlight 4-6 key features that solve specific problems for the target audience',
-        structure: 'Section title, subtitle, feature list with titles, descriptions, and benefits'
+        goal: 'Transform features into compelling benefits that show clear value and outcomes',
+        structure: 'Benefit-first titles, outcome-focused descriptions that answer "what\'s in it for me?"'
       },
       benefits: {
-        goal: 'Focus on outcomes and transformations rather than features, addressing pain points',
-        structure: 'Benefit-focused content that shows before/after scenarios'
+        goal: 'Paint a picture of the transformed life/business after using the solution',
+        structure: 'Before/after scenarios, emotional outcomes, specific results and improvements'
       },
       pricing: {
-        goal: 'Create clear, value-driven pricing tiers that remove barriers to purchase',
-        structure: 'Pricing tiers with clear value propositions and feature comparisons'
+        goal: 'Position pricing as investment in success, not cost - remove price objections',
+        structure: 'Value-focused tiers, benefit-heavy descriptions, social proof elements'
       },
       testimonials: {
-        goal: 'Build trust and credibility with realistic, specific testimonials',
-        structure: '3-4 testimonials with names, roles, specific results, and credible details'
+        goal: 'Build irresistible social proof with specific, results-focused success stories',
+        structure: 'Specific results, emotional quotes, credible details that build trust'
       },
       faq: {
-        goal: 'Address common objections and concerns to remove barriers to conversion',
-        structure: '6-8 questions covering pricing, implementation, results, and support'
+        goal: 'Address objections and fears while reinforcing benefits and building confidence',
+        structure: 'Common concerns answered with reassurance and benefit reinforcement'
       },
       cta: {
-        goal: 'Drive action with compelling, benefit-focused calls to action',
-        structure: 'Primary and secondary CTAs with value reinforcement'
+        goal: 'Create unstoppable momentum toward conversion with urgency and clear value',
+        structure: 'Action-demanding CTAs with benefit reinforcement and urgency elements'
       },
       footer: {
-        goal: 'Provide navigation, trust signals, and legal compliance',
-        structure: 'Links, contact info, social proof, legal pages, trust badges'
+        goal: 'Final conversion opportunity with trust signals and benefit reinforcement',
+        structure: 'Memorable tagline, trust elements, final conversion opportunities'
       }
     };
 
@@ -263,15 +263,20 @@ export class ContentAgent {
     Goal: ${guideline.goal}
     Structure: ${guideline.structure}
     
-    Create content that:
-    1. Speaks directly to the target persona's needs and concerns
-    2. Uses the brand voice and messaging framework
-    3. Reflects the domain meaning and business concept
-    4. Addresses specific pain points this business solves
-    5. Builds trust and credibility
-    6. Drives the desired action
+    Create WEBSITE COPYWRITING that:
+    1. Uses MARKETING LANGUAGE, not business descriptions
+    2. Focuses on BENEFITS and OUTCOMES, not features
+    3. Addresses PAIN POINTS emotionally and offers compelling solutions
+    4. Uses power words, action verbs, and persuasive techniques
+    5. Creates URGENCY and DESIRE to take action immediately
+    6. Sounds like professional website copy, not a business plan
     
-    IMPORTANT: Return ONLY a valid JSON object with detailed, conversion-focused content:
+    COPYWRITING EXAMPLES:
+    - Bad: "Platform for opportunity discovery" → Good: "Never Miss Your Dream Job Again"
+    - Bad: "Form creation software" → Good: "Turn Boring Forms Into Profit-Generating Conversations"
+    - Bad: "Analytics dashboard" → Good: "See Your Success In Real-Time"
+    
+    IMPORTANT: Return ONLY a valid JSON object with persuasive, benefit-focused website copy:
     {
       "title": "compelling section title",
       "subtitle": "supporting subtitle that reinforces value",

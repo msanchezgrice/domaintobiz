@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         });
 
         const prompt = `
-You are an expert copywriter. Create compelling website content for:
+You are an expert website copywriter. Create persuasive, benefit-focused website copy for:
 
 Domain: ${domain}
 Business Type: ${strategy.businessModel.type}
@@ -64,37 +64,52 @@ Target Audience: ${strategy.brandStrategy.targetAudience}
 Brand Voice: ${strategy.brandStrategy.brandPersonality}
 Key Features: ${strategy.mvpScope.features.join(', ')}
 
-CRITICAL: The content MUST align perfectly with the domain name meaning.
-For "${domain}": ${strategy.businessModel.description}
+COPYWRITING REQUIREMENTS:
+1. Write MARKETING COPY, not business descriptions
+2. Focus on BENEFITS and EMOTIONAL OUTCOMES, not features
+3. Use action words, power words, and urgency
+4. Address PAIN POINTS and promise compelling solutions
+5. Create headlines that make people want to read more
+6. Write like you're selling results, not explaining products
 
-Create website copy that directly addresses the target audience's needs.
+EXAMPLES:
+- Bad: "Platform for form creation" → Good: "Turn Every Form Into a Revenue Machine" 
+- Bad: "Opportunity discovery system" → Good: "Never Miss Your Perfect Career Move Again"
+- Bad: "Analytics dashboard" → Good: "Watch Your Success Grow In Real-Time"
+
+Create website copy that makes visitors excited to take action immediately.
 
 Return ONLY a valid JSON object with this structure:
 {
   "hero": {
-    "headline": "Compelling headline that captures the value",
-    "subheadline": "Supporting text that expands on the promise",
+    "headline": "Benefit-driven headline that creates desire (e.g. 'Double Your Sales', 'Find Your Dream Job')",
+    "subheadline": "Promise-focused subheadline that addresses pain and offers transformation",
     "cta": {
-      "primary": { "text": "Action text", "link": "#signup" },
-      "secondary": { "text": "Learn More", "link": "#features" }
+      "primary": { "text": "Action-oriented CTA (e.g. 'Start Winning Today', 'Get My Results')", "link": "#signup" },
+      "secondary": { "text": "Curiosity-driven CTA (e.g. 'See How It Works', 'Watch Demo')", "link": "#features" }
     }
   },
   "sections": [
     {
       "id": "features",
-      "title": "Section Title",
-      "content": "Section content",
+      "title": "Benefit-focused section title (e.g. 'Why Leaders Choose Us', 'Your Success Guaranteed')",
+      "content": "Pain-aware content that transitions to benefits and outcomes",
       "features": [
         {
-          "title": "Feature 1",
-          "description": "Feature description",
-          "icon": "icon-name"
+          "title": "Outcome-focused title (e.g. 'Get 3x More Leads', 'Save 10 Hours Weekly')",
+          "description": "Result-focused description that explains the transformation",
+          "icon": "relevant-icon"
         }
       ]
+    },
+    {
+      "id": "about",
+      "title": "Story-driven title (e.g. 'Built by Experts', 'Your Success Is Our Mission')",
+      "content": "Narrative that connects with target audience dreams and challenges"
     }
   ],
   "footer": {
-    "tagline": "Footer tagline",
+    "tagline": "Memorable brand promise (e.g. 'Your success starts here', 'Results you can trust')",
     "links": [
       { "text": "Privacy", "href": "/privacy" },
       { "text": "Terms", "href": "/terms" }

@@ -137,45 +137,60 @@ The user has provided the following feedback for improving the website:
 IMPORTANT: Incorporate this feedback into the new content while maintaining the business strategy.
 ` : ''}
 
-CRITICAL REQUIREMENTS:
-1. The content MUST be specifically tailored to the business concept: "${strategy.businessModel?.businessConcept}"
-2. Address the exact target market: "${strategy.businessModel?.targetMarket}"
-3. Solve the specific problem: "${strategy.businessModel?.problemSolved}"
-4. Reflect the industry: "${strategy.businessModel?.industry}"
-5. DO NOT use generic placeholders like "Transform your [industry] with [domain]"
-6. Create compelling, specific headlines that would make the target audience immediately understand the value
-7. Make the content authentic to what this specific business would actually offer
+CRITICAL REQUIREMENTS - WEBSITE COPYWRITING FOCUS:
+1. Create MARKETING COPY, not business descriptions - think like a copywriter, not a business analyst
+2. Headlines should be BENEFIT-focused and emotional, not just descriptive
+3. Use action words, power words, and benefit-driven language
+4. Address PAIN POINTS and promise SOLUTIONS in compelling way
+5. Make the target audience feel understood and excited
+6. Use persuasive copywriting techniques: curiosity, urgency, social proof
+7. Write like you're selling the benefits, not explaining features
+
+EXAMPLES OF GOOD WEBSITE COPY:
+- Instead of: "Platform that helps users find opportunities"
+- Write: "Never Miss Your Next Big Break"
+- Instead of: "SaaS platform for form creation" 
+- Write: "Turn Boring Forms Into Engaging Conversations"
+
+TARGET AUDIENCE: ${strategy.businessModel?.targetMarket}
+MAIN PROBLEM THEY FACE: ${strategy.businessModel?.problemSolved}
+SOLUTION BENEFIT: ${strategy.businessModel?.valueProposition}
 
 ${regenerate ? 'This is a REGENERATION - create improved content based on the user feedback above.' : 'This is a NEW GENERATION - create original content.'}
 
-Create website copy that directly speaks to the target audience's specific needs and pain points.
+Create persuasive, benefit-focused website copy that makes visitors want to take action immediately.
 
 Return ONLY a valid JSON object with this structure:
 {
   "hero": {
-    "headline": "Compelling headline that captures the value",
-    "subheadline": "Supporting text that expands on the promise",
+    "headline": "Benefit-focused headline that creates desire (e.g. 'Turn Leads Into Loyal Customers', 'Never Miss Your Perfect Opportunity')",
+    "subheadline": "Promise-based subheadline that expands the benefit and addresses pain (e.g. 'Stop losing potential customers to boring forms. Create conversations that convert.')",
     "cta": {
-      "primary": { "text": "Action text", "link": "#signup" },
-      "secondary": { "text": "Learn More", "link": "#features" }
+      "primary": { "text": "Action-oriented CTA (e.g. 'Start Converting Today', 'Get My Opportunities')", "link": "#signup" },
+      "secondary": { "text": "Curiosity-driven secondary CTA (e.g. 'See How It Works', 'Watch Demo')", "link": "#features" }
     }
   },
   "sections": [
     {
       "id": "features",
-      "title": "Section Title",
-      "content": "Section content",
+      "title": "Benefit-focused section title (e.g. 'Why Customers Choose Us', 'What Makes Us Different')",
+      "content": "Pain-aware intro that transitions to solution benefits",
       "features": [
         {
-          "title": "Feature 1",
-          "description": "Feature description",
-          "icon": "icon-name"
+          "title": "Benefit-first feature title (e.g. 'Get 3x More Responses', 'Find Opportunities Faster')",
+          "description": "Outcome-focused description that explains the result, not just the feature",
+          "icon": "relevant-icon"
         }
       ]
+    },
+    {
+      "id": "about", 
+      "title": "Story-driven title (e.g. 'Built for Ambitious Professionals', 'Your Success Is Our Mission')",
+      "content": "Narrative that connects with target audience's aspirations and challenges"
     }
   ],
   "footer": {
-    "tagline": "Footer tagline",
+    "tagline": "Memorable brand promise (e.g. 'Your next opportunity awaits', 'Forms that actually work')",
     "links": [
       { "text": "Privacy", "href": "/privacy" },
       { "text": "Terms", "href": "/terms" }
