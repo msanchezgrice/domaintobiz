@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     };
 
-    // Enqueue the job using our queue function
+    // Enqueue the job using pgmq
     const { data: result, error } = await supabase.rpc('enqueue_site_generation', {
       p_domain: targetDomain,
       p_user_id: userId || null,
@@ -110,14 +110,14 @@ export default async function handler(req, res) {
     }
 
     const jobInfo = result[0];
-    console.log(`✅ Job enqueued successfully: ${jobInfo.job_id}`);
+    console.log(`✅ Job enqueued successfully: ${jobInfo.job_id} (msg: ${jobInfo.queue_msg_id})`);
 
     // Return job info immediately (202 Accepted)
     return res.status(202).json({
       success: true,
       message: 'Site generation job enqueued successfully',
       jobId: jobInfo.job_id,
-      queueJobId: jobInfo.queue_job_id,
+      queueMsgId: jobInfo.queue_msg_id,
       domain: targetDomain,
       status: 'queued',
       estimatedTime: '2-5 minutes',

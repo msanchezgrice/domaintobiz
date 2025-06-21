@@ -29,23 +29,48 @@ class SiteGenerationWorker:
         logger.info(f"🤖 Site Generation Worker initialized: {self.worker_id}")
 
     async def poll_queue(self):
-        """Main queue polling loop"""
-        logger.info("🔄 Starting queue polling...")
+        """Main queue polling loop using pgmq"""
+        logger.info("🔄 Starting pgmq queue polling...")
         
         while self.is_running:
             try:
-                # Dequeue a job from site_jobs queue
-                result = self.supabase.rpc('dequeue_job', {
-                    'queue_name': 'site_jobs',
-                    'worker_id': self.worker_id
+                # Read messages from pgmq queue
+                result = self.supabase.rpc('pgmq_read', {
+                    'queue_name': 'site_jobs_queue',
+                    'vt': 30,  # Visibility timeout in seconds
+                    'qty': 1   # Number of messages to read
                 }).execute()
                 
                 if result.data and len(result.data) > 0:
-                    job = result.data[0]
-                    logger.info(f"📋 Processing job: {job['payload']['site_job_id']}")
+                    message = result.data[0]
+                    msg_id = message['msg_id']
+                    payload = message['message']
                     
-                    # Process the job
-                    await self.process_job(job['payload'])
+                    logger.info(f"📋 Processing message {msg_id}: {payload['site_job_id']} for domain: {payload['domain']}")
+                    
+                    try:
+                        # Mark job as processing
+                        self.supabase.table('site_jobs').update({
+                            'status': 'processing',
+                            'worker_id': self.worker_id,
+                            'started_at': datetime.now().isoformat()
+                        }).eq('id', payload['site_job_id']).execute()
+                        
+                        # Process the job
+                        await self.process_job(payload)
+                        
+                        # Delete message from queue after successful processing
+                        self.supabase.rpc('pgmq_delete', {
+                            'queue_name': 'site_jobs_queue',
+                            'msg_id': msg_id
+                        }).execute()
+                        
+                        logger.info(f"✅ Job completed and message {msg_id} deleted")
+                        
+                    except Exception as job_error:
+                        logger.error(f"❌ Job processing failed: {job_error}")
+                        # Don't delete the message, let it become visible again for retry
+                        # pgmq will automatically make it visible after visibility timeout
                     
                 else:
                     # No jobs available, wait before polling again
@@ -64,8 +89,7 @@ class SiteGenerationWorker:
         logger.info(f"🚀 Starting job processing for {domain} (Job ID: {site_job_id})")
         
         try:
-            # Update job status to processing
-            await self.update_job_status(site_job_id, 'processing')
+            # Job is already marked as processing by dequeue_next_job
             await self.update_progress(site_job_id, 'initialize', 'running', 0, 'Starting site generation...')
             
             # Step 1: Domain Analysis
@@ -111,7 +135,11 @@ class SiteGenerationWorker:
             }
             
             # Update job as completed
-            await self.update_job_status(site_job_id, 'completed', result_data)
+            self.supabase.table('site_jobs').update({
+                'status': 'completed',
+                'result_data': result_data,
+                'completed_at': datetime.now().isoformat()
+            }).eq('id', site_job_id).execute()
             
             # Create site record
             await self.create_site_record(site_job_id, domain, result_data, job_data)
@@ -120,7 +148,12 @@ class SiteGenerationWorker:
             
         except Exception as e:
             logger.error(f"❌ Job failed for {domain}: {e}")
-            await self.update_job_status(site_job_id, 'failed', error_message=str(e))
+            # Update job as failed
+            self.supabase.table('site_jobs').update({
+                'status': 'failed',
+                'error_message': str(e),
+                'completed_at': datetime.now().isoformat()
+            }).eq('id', site_job_id).execute()
             await self.update_progress(site_job_id, 'error', 'failed', 0, f'Job failed: {str(e)}')
 
     async def analyze_domain(self, domain: str, job_data: Dict) -> Dict[str, Any]:
@@ -315,30 +348,7 @@ class SiteGenerationWorker:
         else:
             raise Exception("No deployment URL returned from website generation")
 
-    async def update_job_status(self, job_id: str, status: str, result_data: Optional[Dict] = None, error_message: Optional[str] = None):
-        """Update job status in database"""
-        try:
-            update_data = {
-                'status': status,
-                'worker_id': self.worker_id
-            }
-            
-            if status == 'processing':
-                update_data['started_at'] = datetime.now().isoformat()
-            elif status in ['completed', 'failed']:
-                update_data['completed_at'] = datetime.now().isoformat()
-            
-            if result_data:
-                update_data['result_data'] = result_data
-            
-            if error_message:
-                update_data['error_message'] = error_message
-            
-            self.supabase.table('site_jobs').update(update_data).eq('id', job_id).execute()
-            logger.info(f"📊 Job {job_id} status updated to: {status}")
-            
-        except Exception as e:
-            logger.error(f"❌ Failed to update job status: {e}")
+
 
     async def update_progress(self, job_id: str, step_name: str, status: str, progress: int, message: str):
         """Update job progress"""
