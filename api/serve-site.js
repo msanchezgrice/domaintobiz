@@ -168,8 +168,8 @@ ${css}
                         <span class="badge-icon">✨</span>
                         <span class="badge-text">Premium ${businessType} Solutions</span>
                     </div>
-                    <h1 class="hero-title">Transform Your ${businessType} with ${domain}</h1>
-                    <p class="hero-subtitle">Discover professional solutions that drive growth, enhance efficiency, and deliver exceptional results for your business.</p>
+                    <h1 class="hero-title">${website.content?.hero?.headline || website.business_model?.businessConcept || `Professional ${businessType} Solutions`}</h1>
+                    <p class="hero-subtitle">${website.content?.hero?.subheadline || website.business_model?.valueProposition || 'Discover professional solutions that drive growth, enhance efficiency, and deliver exceptional results for your business.'}</p>
                     <div class="hero-cta">
                         <a href="#contact" class="btn btn-primary">
                             Get Started Today

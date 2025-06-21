@@ -101,8 +101,8 @@ Return ONLY a valid JSON object with this exact structure:
 
         console.log('📤 Sending prompt to OpenAI...');
         
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o",
+              const completion = await openai.chat.completions.create({
+        model: "gpt-4.1-2025-04-14",
           messages: [
             {
               role: "system",
