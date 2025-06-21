@@ -49,10 +49,28 @@ export default async function handler(req, res) {
           .from('pg_proc')
           .select('proname')
           .like('proname', '%pgmq%')
-          .limit(10);
+          .limit(20);
         console.log('🔧 Available pgmq functions:', functions?.map(f => f.proname) || 'none found');
+        
+        // Try to get more info about available RPC functions
+        const { data: rpcFunctions, error: rpcError } = await supabase
+          .from('information_schema.routines')
+          .select('routine_name, routine_schema')
+          .like('routine_name', '%pgmq%')
+          .limit(10);
+        console.log('🔧 Available RPC functions:', rpcFunctions);
+        
       } catch (funcError) {
-        console.log('🔧 Could not query available functions');
+        console.log('🔧 Could not query available functions:', funcError.message);
+        
+        // Try to test if we can call any basic pgmq functions
+        try {
+          const { data: testCall, error: testError } = await supabase.rpc('pgmq_list_queues');
+          console.log('🔧 pgmq_list_queues result:', testCall);
+          console.log('🔧 pgmq_list_queues error:', testError?.message);
+        } catch (listError) {
+          console.log('🔧 Could not call pgmq_list_queues:', listError.message);
+        }
       }
       
       // Try to read from pgmq queue using SQL directly
@@ -68,12 +86,12 @@ export default async function handler(req, res) {
 
       if (readError) {
         console.log('❌ Direct table read failed, trying RPC...');
-        // Try alternative RPC call
-        const { data: rpcMessages, error: rpcError } = await supabase.rpc('pgmq.read', {
-          queue_name: 'site_jobs_queue',
-          vt: 30,
-          qty: 5
-        });
+        // Try correct pgmq function call
+        const { data: rpcMessages, error: rpcError } = await supabase.rpc('pgmq_read', [
+          'site_jobs_queue',  // queue_name
+          30,                 // vt (visibility timeout)
+          5                   // qty (quantity)
+        ]);
         
         if (rpcError) {
           throw new Error(`Queue read failed: ${rpcError.message}. Available functions might be different.`);
@@ -114,53 +132,78 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString()
       };
 
-      // Test enqueueing - check if our custom function exists
-      const { data: result, error } = await supabase.rpc('enqueue_site_generation', {
-        p_domain: testDomain,
-        p_user_id: null,
-        p_job_data: testData
-      });
+      // Test enqueueing using pgmq_send
+      console.log('📋 Testing pgmq_send...');
+      const { data: sendResult, error: sendError } = await supabase.rpc('pgmq_send', [
+        'site_jobs_queue',  // queue_name
+        testData            // message
+      ]);
 
-      if (error) {
-        console.log('❌ Custom enqueue function failed:', error.message);
+      if (sendError) {
+        console.log('❌ pgmq_send failed:', sendError.message);
         
-        // Try direct table insert as fallback
-        const { data: directInsert, error: insertError } = await supabase
-          .from('site_jobs')
-          .insert({
-            domain: testDomain,
-            job_data: testData
-          })
-          .select()
-          .single();
+        // Fallback to custom function
+        const { data: result, error } = await supabase.rpc('enqueue_site_generation', {
+          p_domain: testDomain,
+          p_user_id: null,
+          p_job_data: testData
+        });
+        
+        if (error) {
+          console.log('❌ Custom enqueue function also failed:', error.message);
           
-        if (insertError) {
-          throw new Error(`Both enqueue methods failed. Custom: ${error.message}, Direct: ${insertError.message}`);
+          // Try direct table insert as fallback
+          const { data: directInsert, error: insertError } = await supabase
+            .from('site_jobs')
+            .insert({
+              domain: testDomain,
+              job_data: testData
+            })
+            .select()
+            .single();
+            
+          if (insertError) {
+            throw new Error(`All enqueue methods failed. pgmq: ${sendError.message}, Custom: ${error.message}, Direct: ${insertError.message}`);
+          }
+          
+          return res.status(200).json({
+            success: true,
+            message: 'Test job created via direct insert (pgmq functions unavailable)',
+            data: {
+              jobId: directInsert.id,
+              domain: testDomain,
+              method: 'direct_insert'
+            }
+          });
         }
-        
+
+        const jobInfo = result[0];
+        console.log(`✅ Test job enqueued via custom function: ${jobInfo.job_id}`);
+
         return res.status(200).json({
           success: true,
-          message: 'Test job created via direct insert (pgmq functions unavailable)',
+          message: 'Test job enqueued via custom function',
           data: {
-            jobId: directInsert.id,
+            jobId: jobInfo.job_id,
+            queueMsgId: jobInfo.queue_msg_id,
             domain: testDomain,
-            method: 'direct_insert'
+            method: 'custom_function'
+          }
+        });
+      } else {
+        // pgmq_send succeeded
+        console.log(`✅ Test job enqueued via pgmq_send: ${sendResult}`);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Test job enqueued via pgmq_send',
+          data: {
+            msgId: sendResult,
+            domain: testDomain,
+            method: 'pgmq_send'
           }
         });
       }
-
-      const jobInfo = result[0];
-      console.log(`✅ Test job enqueued: ${jobInfo.job_id}`);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Test job enqueued successfully',
-        data: {
-          jobId: jobInfo.job_id,
-          queueMsgId: jobInfo.queue_msg_id,
-          domain: testDomain
-        }
-      });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
