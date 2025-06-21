@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site.brand.name }} - {{ site.content.hero.headline }}</title>
+    <meta name="description" content="{{ site.content.hero.subheadline }}">
+    
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.9.9"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --primary: {{ site.brand.primaryColor }};
+            --secondary: {{ site.design.colorPalette.secondary }};
+            --accent: {{ site.design.colorPalette.accent }};
+            --bg: {{ site.design.colorPalette.background }};
+            --text: {{ site.design.colorPalette.text }};
+        }
+        
+        body {
+            font-family: '{{ site.design.typography.primary }}', sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #f8fafc 100%);
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <!-- Navigation -->
+    {% include 'partials/navbar.html.jinja' %}
+    
+    <!-- Hero Section -->
+    <section class="hero-gradient text-white py-20">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
+                {{ site.content.hero.headline }}
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto animate-fade-in">
+                {{ site.content.hero.subheadline }}
+            </p>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in">
+                <button 
+                    hx-post="/api/{{ site.content.hero.cta.primary.link }}"
+                    hx-swap="outerHTML"
+                    hx-target="#cta-response"
+                    class="bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-lg"
+                >
+                    {{ site.content.hero.cta.primary.text }}
+                </button>
+                
+                <button 
+                    hx-get="/api/{{ site.content.hero.cta.secondary.link }}"
+                    hx-swap="innerHTML"
+                    hx-target="#modal-content"
+                    class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-gray-900 transition-colors text-lg"
+                >
+                    {{ site.content.hero.cta.secondary.text }}
+                </button>
+            </div>
+            
+            <div id="cta-response" class="mt-6"></div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    {% if site.content.sections.features %}
+    <section class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">{{ site.content.sections.features.title }}</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    {{ site.content.sections.features.content }}
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                {% for feature in site.content.sections.features.features %}
+                <div class="card-hover bg-gray-50 p-8 rounded-xl">
+                    <div class="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-lg mb-6 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">{{ feature.title }}</h3>
+                    <p class="text-gray-600">{{ feature.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Pricing Section -->
+    {% if site.modules.stripePaywall %}
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h2 class="text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
+            <p class="text-xl text-gray-600 mb-12">Choose the plan that works for you</p>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold mb-4">Starter</h3>
+                    <div class="text-4xl font-bold text-primary mb-6">$29<span class="text-lg text-gray-500">/month</span></div>
+                    <ul class="text-left space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                            Essential features
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                            Email support
+                        </li>
+                    </ul>
+                    <button 
+                        hx-post="/api/pay"
+                        hx-vals='{"plan": "starter"}'
+                        class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+                    >
+                        Get Started
+                    </button>
+                </div>
+                
+                <div class="bg-white p-8 rounded-xl shadow-lg border-2 border-primary">
+                    <div class="bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold mb-4 inline-block">
+                        Most Popular
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Pro</h3>
+                    <div class="text-4xl font-bold text-primary mb-6">$99<span class="text-lg text-gray-500">/month</span></div>
+                    <ul class="text-left space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                            All features
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                            Priority support
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                            Advanced analytics
+                        </li>
+                    </ul>
+                    <button 
+                        hx-post="/api/pay"
+                        hx-vals='{"plan": "pro"}'
+                        class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+                    >
+                        Get Started
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Waitlist Section -->
+    {% if site.modules.waitlist %}
+    <section class="py-20 bg-white">
+        <div class="max-w-2xl mx-auto px-4 text-center">
+            <h2 class="text-4xl font-bold mb-4">Join the Waitlist</h2>
+            <p class="text-xl text-gray-600 mb-8">Be the first to know when we launch</p>
+            
+            <form hx-post="/api/waitlist" hx-swap="outerHTML" hx-target="#waitlist-form" id="waitlist-form">
+                <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                    <input 
+                        type="email" 
+                        name="email" 
+                        placeholder="Enter your email"
+                        required
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                    <button 
+                        type="submit"
+                        class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+                    >
+                        Join Waitlist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Footer -->
+    {% include 'partials/footer.html.jinja' %}
+    
+    <!-- Modal for secondary CTA -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md mx-4">
+            <div id="modal-content">
+                <!-- Modal content will be loaded here -->
+            </div>
+            <button onclick="document.getElementById('modal').classList.add('hidden')" class="mt-4 text-gray-500 hover:text-gray-700">
+                Close
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Show modal when content is loaded
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.target.id === 'modal-content') {
+                document.getElementById('modal').classList.remove('hidden');
+                document.getElementById('modal').classList.add('flex');
+            }
+        });
+    </script>
+</body>
+</html> 
