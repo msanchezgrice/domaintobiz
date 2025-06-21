@@ -121,8 +121,8 @@ function getDefaultHTML(website) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Professional ${businessType.toLowerCase()} solutions and services from ${domain}">
-    <title>${domain} - Transform Your ${businessType} Today</title>
+    <meta name="description" content="${website.website_data?.websiteContent?.hero?.subheadline || website.website_data?.strategy?.businessModel?.valueProposition || `Professional ${businessType.toLowerCase()} solutions and services from ${domain}`}">
+    <title>${website.website_data?.websiteContent?.hero?.headline || domain} - ${website.website_data?.strategy?.brandStrategy?.positioning?.substring(0, 60) || businessType}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -166,17 +166,17 @@ ${css}
                 <div class="hero-content">
                     <div class="hero-badge">
                         <span class="badge-icon">✨</span>
-                        <span class="badge-text">Premium ${businessType} Solutions</span>
+                        <span class="badge-text">Premium ${website.website_data?.strategy?.businessModel?.type || businessType} Solutions</span>
                     </div>
                     <h1 class="hero-title">${website.website_data?.strategy?.businessModel?.businessConcept || website.content?.hero?.headline || `Professional ${businessType} Solutions`}</h1>
                     <p class="hero-subtitle">${website.website_data?.strategy?.businessModel?.valueProposition || website.content?.hero?.subheadline || 'Discover professional solutions that drive growth, enhance efficiency, and deliver exceptional results for your business.'}</p>
                     <div class="hero-cta">
                         <a href="#contact" class="btn btn-primary">
-                            Get Started Today
+                            ${website.website_data?.websiteContent?.hero?.cta?.primary?.text || 'Get Started Today'}
                             <span class="btn-icon">→</span>
                         </a>
                         <a href="#services" class="btn btn-secondary">
-                            Learn More
+                            ${website.website_data?.websiteContent?.hero?.cta?.secondary?.text || 'Learn More'}
                         </a>
                     </div>
                     <div class="hero-stats">
@@ -200,10 +200,15 @@ ${css}
         <section id="services" class="services">
             <div class="container">
                 <div class="section-header">
-                    <h2 class="section-title">Our Services</h2>
-                    <p class="section-subtitle">Comprehensive solutions tailored to your business needs</p>
+                    <h2 class="section-title">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'features')?.title || 'Our Services'}</h2>
+                    <p class="section-subtitle">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'features')?.content || 'Comprehensive solutions tailored to your business needs'}</p>
                 </div>
                 <div class="services-grid">
+                    ${(website.website_data?.websiteContent?.sections?.find(s => s.id === 'features')?.features || website.website_data?.strategy?.mvpScope?.coreFeatures || [
+                        { name: 'Quality Service', description: 'Professional solutions designed to meet your unique business requirements with precision and excellence.' },
+                        { name: 'Expert Team', description: 'Experienced professionals with deep industry knowledge ready to tackle your most challenging projects.' },
+                        { name: 'Fast Delivery', description: 'Quick turnaround times without compromising on quality, ensuring your business stays ahead of the competition.' }
+                    ]).slice(0, 6).map(feature => `
                     <div class="service-card">
                         <div class="service-icon">
                             <div class="icon-bg">
@@ -212,31 +217,10 @@ ${css}
                                 </svg>
                             </div>
                         </div>
-                        <h3 class="service-title">Quality Service</h3>
-                        <p class="service-description">Professional solutions designed to meet your unique business requirements with precision and excellence.</p>
+                        <h3 class="service-title">${feature.title || feature.name || 'Service'}</h3>
+                        <p class="service-description">${feature.description || 'Professional service designed for your needs.'}</p>
                     </div>
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <div class="icon-bg">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <h3 class="service-title">Expert Team</h3>
-                        <p class="service-description">Experienced professionals with deep industry knowledge ready to tackle your most challenging projects.</p>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <div class="icon-bg">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <h3 class="service-title">Fast Delivery</h3>
-                        <p class="service-description">Quick turnaround times without compromising on quality, ensuring your business stays ahead of the competition.</p>
-                    </div>
+                    `).join('')}
                 </div>
             </div>
         </section>
@@ -246,26 +230,26 @@ ${css}
                 <div class="about-content">
                     <div class="about-text">
                         <div class="section-header">
-                            <h2 class="section-title">About ${domain}</h2>
-                            <p class="section-subtitle">We're passionate about delivering excellence in ${businessType.toLowerCase()} solutions</p>
+                            <h2 class="section-title">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'about')?.title || `About ${domain}`}</h2>
+                            <p class="section-subtitle">${website.website_data?.strategy?.brandStrategy?.positioning || `We're passionate about delivering excellence in ${businessType.toLowerCase()} solutions`}</p>
                         </div>
                         <div class="about-description">
-                            <p>With years of experience and a commitment to innovation, we help businesses transform their operations and achieve unprecedented growth. Our team combines deep industry knowledge with cutting-edge technology.</p>
-                            <p>From startups to enterprise organizations, we've helped hundreds of clients succeed in today's competitive marketplace.</p>
+                            <p>${website.website_data?.websiteContent?.sections?.find(s => s.id === 'about')?.content || website.website_data?.strategy?.businessModel?.businessConcept || 'With years of experience and a commitment to innovation, we help businesses transform their operations and achieve unprecedented growth. Our team combines deep industry knowledge with cutting-edge technology.'}</p>
+                            <p>${website.website_data?.strategy?.businessModel?.competitiveAdvantage || 'From startups to enterprise organizations, we\'ve helped hundreds of clients succeed in today\'s competitive marketplace.'}</p>
                         </div>
                         <div class="about-highlights">
                             <div class="highlight-item">
                                 <div class="highlight-icon">🚀</div>
                                 <div class="highlight-text">
-                                    <h4>Innovation First</h4>
-                                    <p>Cutting-edge solutions for modern challenges</p>
+                                    <h4>${website.website_data?.strategy?.brandStrategy?.values?.[2] || 'Innovation'} First</h4>
+                                    <p>${website.website_data?.strategy?.brandStrategy?.differentiation || 'Cutting-edge solutions for modern challenges'}</p>
                                 </div>
                             </div>
                             <div class="highlight-item">
                                 <div class="highlight-icon">🎯</div>
                                 <div class="highlight-text">
                                     <h4>Results Driven</h4>
-                                    <p>Measurable outcomes that impact your bottom line</p>
+                                    <p>${website.website_data?.strategy?.businessModel?.problemSolved || 'Measurable outcomes that impact your bottom line'}</p>
                                 </div>
                             </div>
                         </div>
@@ -273,7 +257,7 @@ ${css}
                     <div class="about-visual">
                         <div class="visual-placeholder">
                             <div class="visual-icon">📊</div>
-                            <p>Professional ${businessType} Excellence</p>
+                            <p>Professional ${website.website_data?.strategy?.businessModel?.type || businessType} Excellence</p>
                         </div>
                     </div>
                 </div>
@@ -284,21 +268,19 @@ ${css}
             <div class="container">
                 <div class="contact-content">
                     <div class="contact-info">
-                        <h2 class="contact-title">Ready to Get Started?</h2>
-                        <p class="contact-subtitle">Join hundreds of satisfied clients who have transformed their business with ${domain}</p>
+                        <h2 class="contact-title">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'contact')?.title || 'Ready to Get Started?'}</h2>
+                        <p class="contact-subtitle">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'contact')?.content || `Join hundreds of satisfied clients who have transformed their business with ${domain}`}</p>
                         <div class="contact-benefits">
+                            ${(website.website_data?.strategy?.mvpScope?.coreFeatures?.slice(0, 3) || [
+                                { name: 'Free consultation' },
+                                { name: 'No long-term commitment' },
+                                { name: 'Expert support team' }
+                            ]).map(benefit => `
                             <div class="benefit-item">
                                 <div class="benefit-icon">✓</div>
-                                <span>Free consultation</span>
+                                <span>${benefit.name || benefit.title || benefit}</span>
                             </div>
-                            <div class="benefit-item">
-                                <div class="benefit-icon">✓</div>
-                                <span>No long-term commitment</span>
-                            </div>
-                            <div class="benefit-item">
-                                <div class="benefit-icon">✓</div>
-                                <span>Expert support team</span>
-                            </div>
+                            `).join('')}
                         </div>
                     </div>
                     <div class="contact-form-container">
@@ -335,7 +317,7 @@ ${css}
                         <div class="logo-icon">${domain.charAt(0).toUpperCase()}</div>
                         <span class="logo-text">${domain}</span>
                     </div>
-                    <p class="footer-description">Transforming businesses through innovative ${businessType.toLowerCase()} solutions.</p>
+                    <p class="footer-description">${website.website_data?.websiteContent?.footer?.tagline || website.website_data?.strategy?.brandStrategy?.brandPromise || `Transforming businesses through innovative ${businessType.toLowerCase()} solutions.`}</p>
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
