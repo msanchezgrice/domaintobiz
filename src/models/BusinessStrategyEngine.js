@@ -29,10 +29,10 @@ export class BusinessStrategyEngine {
         timeoutPromise
       ]);
     } catch (error) {
-      if (error.message.includes('timeout')) {
-        console.warn('⚠️ Strategy generation timed out, using enhanced fallback');
-        return this.generateEnhancedFallbackStrategy(context, domainAnalysis);
-      }
+      console.error('❌ Strategy generation failed:', error.message);
+      console.log('🚫 NO FALLBACK - All strategy generation must use AI');
+      
+      // Do not use fallback - throw the error to stop the pipeline
       throw error;
     }
   }
@@ -72,7 +72,7 @@ export class BusinessStrategyEngine {
     });
 
     const strategy = {
-      domain: domainAnalysis.domain,
+      domain: context.domain, // Fixed: was domainAnalysis.domain but parameter is context
       businessModel,
       brandStrategy,
       mvpScope: mvpPlan, // Also add as mvpScope for backward compatibility
@@ -108,10 +108,10 @@ export class BusinessStrategyEngine {
         timeout
       ]);
     } catch (error) {
-      if (error.message.includes('timeout')) {
-        console.warn('⚠️ Business model generation timed out, using AI insights fallback');
-        return this.createFallbackBusinessModel(context);
-      }
+      console.error('❌ Business model generation failed:', error.message);
+      console.log('🚫 NO FALLBACK - Business model generation is critical');
+      
+      // Do not use fallback - throw the error
       throw error;
     }
   }
@@ -259,66 +259,7 @@ export class BusinessStrategyEngine {
     return features;
   }
 
-  createFallbackBusinessModel(context) {
-    // Enhanced fallback using AI insights if available
-    const aiInsights = context.aiInsights || {};
-    
-    return {
-      domainMeaning: aiInsights.businessConcept || `Professional services related to ${context.domainName}`,
-      businessConcept: aiInsights.businessConcept || `Expert ${context.domainName} solutions and consulting`,
-      type: aiInsights.industryFit || 'Professional Services',
-      industry: aiInsights.industryFit || 'Consulting',
-      secondaryIndustries: ['Technology', 'Business Services'],
-      revenueModel: 'service-based',
-      revenueStreams: ['consulting services', 'premium content', 'training programs'],
-      valueProposition: aiInsights.valueProposition || `Expert ${context.domainName} guidance and solutions`,
-      problemSolved: `Challenges and concerns related to ${context.domainName}`,
-      targetMarket: aiInsights.targetDemographic || 'Professionals seeking expert guidance',
-      targetPersona: aiInsights.targetDemographic || 'Working professionals who need expert assistance',
-      monetizationTimeline: '1-3 months',
-      keyMetrics: ['client inquiries', 'consultation bookings', 'content engagement'],
-      competitiveAdvantage: aiInsights.strengths?.join(', ') || 'Specialized expertise and professional approach'
-    };
-  }
-
-  generateEnhancedFallbackStrategy(context, domainAnalysis) {
-    const businessModel = this.createFallbackBusinessModel(context);
-    const brandStrategy = {
-      positioning: businessModel.valueProposition,
-      brandPromise: 'Professional expertise and reliable solutions',
-      values: ['trust', 'expertise', 'results', 'professionalism'],
-      personality: ['knowledgeable', 'reliable', 'professional', 'helpful']
-    };
-    
-    const mvpPlan = {
-      coreFeatures: this.generateCoreFeatures(context, businessModel),
-      technicalStack: {
-        frontend: 'HTML/CSS/JavaScript',
-        hosting: 'Vercel',
-        analytics: 'Google Analytics'
-      }
-    };
-
-    return {
-      domain: domainAnalysis.domain,
-      businessModel,
-      brandStrategy,
-      mvpScope: mvpPlan,
-      mvpPlan,
-      implementation: this.createLightweightImplementationPlan({
-        domain: domainAnalysis.domain,
-        businessModel,
-        brandStrategy,
-        mvpPlan
-      }),
-      targetMarket: businessModel.targetMarket,
-      valueProposition: businessModel.valueProposition,
-      industry: businessModel.industry,
-      revenueModel: businessModel.revenueModel,
-      fallback: true,
-      fastGeneration: true
-    };
-  }
+  // Fallback methods removed - all strategy generation must use AI
 
   buildContext(domainAnalysis) {
     return {

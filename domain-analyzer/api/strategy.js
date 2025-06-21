@@ -153,36 +153,11 @@ Return ONLY a valid JSON object with this exact structure:
         }
       }
     } catch (error) {
-      console.error('❌ Error generating strategy:', error);
-      console.log('🔄 Falling back to mock strategy');
+      console.error('❌ Strategy generation failed:', error.message);
+      console.log('🚫 NO FALLBACK - Strategy generation is required for meaningful content');
       
-      strategy = {
-        domain: domainAnalysis.domain,
-        businessModel: {
-          type: 'SaaS',
-          description: `Business strategy for ${domainAnalysis.domain}`,
-          revenueStreams: ['Subscription', 'Premium features', 'Consulting'],
-          targetMarket: 'Small to medium businesses'
-        },
-        brandStrategy: {
-          positioning: 'Premium solution',
-          uniqueValue: 'Advanced automation and AI',
-          targetAudience: 'Tech-savvy professionals',
-          brandPersonality: 'Innovative and reliable'
-        },
-        mvpScope: {
-          features: ['Landing page', 'User authentication', 'Core functionality', 'Analytics dashboard', 'Payment integration'],
-          timeline: '3-6 months',
-          budget: '$50k-$100k'
-        },
-        marketAnalysis: {
-          competitors: ['TBD based on research'],
-          marketSize: 'Multi-billion dollar market',
-          opportunity: 'Growing demand for AI solutions'
-        },
-        timestamp: new Date().toISOString(),
-        fallback: true
-      };
+      // Do not use fallback content - throw the error to stop the pipeline
+      throw new Error(`Strategy generation failed for ${domainAnalysis.domain}: ${error.message}`);
     }
 
     // Try to store in database (but don't fail if it doesn't work)

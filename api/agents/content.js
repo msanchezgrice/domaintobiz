@@ -238,58 +238,11 @@ Return ONLY a valid JSON object with this structure:
         }
       }
     } catch (error) {
-      console.error('❌ Error generating content:', error);
-      console.log('🔄 Using enhanced fallback content based on business strategy...');
+      console.error('❌ Content generation failed:', error.message);
+      console.log('🚫 NO FALLBACK - Content generation is critical for meaningful websites');
       
-      // Create content using AI INSIGHTS first, then business strategy - no generic placeholders
-      const aiInsights = domainAnalysis?.aiInsights;
-      const businessConcept = aiInsights?.businessConcept || strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning;
-      const valueProposition = aiInsights?.valueProposition || strategy.businessModel?.valueProposition;
-      const targetMarket = aiInsights?.targetDemographic || strategy.businessModel?.targetMarket;
-      const industry = aiInsights?.industryFit || strategy.businessModel?.industry;
-      const problemSolved = strategy.businessModel?.problemSolved;
-      
-      if (!businessConcept || !valueProposition) {
-        throw new Error('Missing critical business strategy data - cannot generate meaningful content without business concept and value proposition');
-      }
-      
-      // Generate domain-specific content based on actual strategy
-      websiteContent = {
-        status: 'completed',
-        strategy_based: true,
-        hero: {
-          headline: businessConcept,
-          subheadline: valueProposition,
-          cta: {
-            primary: { text: 'Get Started', link: '#signup' },
-            secondary: { text: 'Learn More', link: '#features' }
-          }
-        },
-        sections: [
-          {
-            id: 'features',
-            title: `${industry} Solutions`,
-            content: `${problemSolved}`,
-            features: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || []).map(f => ({
-              title: typeof f === 'object' ? f.name || f.title : f,
-              description: typeof f === 'object' ? f.description : `Advanced ${f} designed for ${targetMarket}`,
-              icon: 'star'
-            }))
-          },
-          {
-            id: 'about',
-            title: `About ${businessConcept}`,
-            content: `${businessConcept} - ${valueProposition}. We serve ${targetMarket} by ${problemSolved}.`
-          }
-        ],
-        footer: {
-          tagline: valueProposition,
-          links: [
-            { text: 'Privacy Policy', href: '/privacy' },
-            { text: 'Terms of Service', href: '/terms' }
-          ]
-        }
-      };
+      // Do not use fallback content - throw the error to stop the pipeline
+      throw new Error(`Content generation failed for ${domain}: ${error.message}`);
     }
 
     console.log('✍️ Content generation completed');

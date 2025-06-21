@@ -267,43 +267,11 @@ export default async function handler(req, res) {
       });
       
     } catch (error) {
-      console.error('❌ Content Agent error:', error);
-      // Create content using AI insights first, then business strategy - no generic placeholders
-      const aiInsights = domainAnalysis?.aiInsights;
-      const businessConcept = aiInsights?.businessConcept || strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning;
-      const valueProposition = aiInsights?.valueProposition || strategy.businessModel?.valueProposition;
-      const targetMarket = aiInsights?.targetDemographic || strategy.businessModel?.targetMarket;
+      console.error('❌ Content Agent failed:', error.message);
+      console.log('🚫 NO FALLBACK - Content generation is critical for meaningful websites');
       
-      if (!businessConcept || !valueProposition) {
-        console.error('❌ Missing critical business data for content generation');
-        throw new Error(`Content generation failed for ${targetDomain}: Missing business concept or value proposition`);
-      }
-      
-      agentResults.content = {
-        status: 'error_with_fallback',
-        error: error.message,
-        fallback: {
-          hero: {
-            headline: businessConcept,
-            subheadline: valueProposition,
-            cta: {
-              primary: { text: 'Get Started', link: '#signup' },
-              secondary: { text: 'Learn More', link: '#features' }
-            }
-          },
-          sections: [
-            {
-              title: `${strategy.businessModel?.industry || 'Our'} Solutions`,
-              content: strategy.businessModel?.problemSolved || 'Discover our comprehensive solutions',
-              features: (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || []).map(f => ({
-                title: typeof f === 'object' ? f.name || f.title : f,
-                description: typeof f === 'object' ? f.description : `${f} designed for ${targetMarket}`,
-                icon: 'star'
-              }))
-            }
-          ]
-        }
-      };
+      // Do not use fallback content - throw the error to stop the pipeline
+      throw new Error(`Content generation failed for ${targetDomain}: ${error.message}`);
       
       // Update progress with error but continue
       await fetch(`${origin}/api/progress-status?sessionId=${executionId}`, {

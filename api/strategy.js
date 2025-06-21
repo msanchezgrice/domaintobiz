@@ -89,53 +89,11 @@ export default async function handler(req, res) {
       console.log('✅ Strategy generated successfully using BusinessStrategyEngine');
       
     } catch (error) {
-      if (error.message.includes('timeout')) {
-        console.error('❌ Strategy generation timed out:', error.message);
-        console.log('🔄 Using enhanced fallback strategy due to timeout');
-      } else {
-        console.error('❌ Error generating strategy with BusinessStrategyEngine:', error);
-        console.log('🔄 Falling back to basic strategy');
-      }
+      console.error('❌ Strategy generation failed:', error.message);
+      console.log('🚫 NO FALLBACK - Strategy generation is required for meaningful content');
       
-      strategy = {
-        domain: domainAnalysis.domain,
-        businessModel: {
-          domainMeaning: `Business based on ${domainAnalysis.domain}`,
-          businessConcept: `Service platform for ${domainAnalysis.domain}`,
-          type: 'Service Platform',
-          industry: 'Professional Services',
-          revenueModel: 'subscription',
-          revenueStreams: ['Subscription', 'Premium features', 'Consulting'],
-          targetMarket: 'Small to medium businesses',
-          valueProposition: 'Comprehensive solution for your needs',
-          problemSolved: 'Key business challenges'
-        },
-        brandStrategy: {
-          positioning: 'Trusted solution provider',
-          brandPromise: 'Exceptional service delivery',
-          values: ['trust', 'expertise', 'innovation'],
-          personality: ['professional', 'reliable', 'innovative']
-        },
-        mvpScope: {
-          coreFeatures: [
-            { name: 'Landing Page', description: 'Professional website presence' },
-            { name: 'Contact System', description: 'Customer communication tools' },
-            { name: 'Service Showcase', description: 'Display of offerings' },
-            { name: 'Analytics', description: 'Performance tracking' }
-          ]
-        },
-        timestamp: new Date().toISOString(),
-        fallback: true
-      };
-      
-      if (regenerate && userComments) {
-        strategy.regenerationContext = {
-          isRegeneration: true,
-          userFeedback: userComments,
-          projectId: projectId,
-          regeneratedAt: new Date().toISOString()
-        };
-      }
+      // Do not use fallback content - throw the error to stop the pipeline
+      throw new Error(`Strategy generation failed for ${domainAnalysis.domain}: ${error.message}`);
     }
 
     // Try to store in database (but don't fail if it doesn't work)
