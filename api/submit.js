@@ -88,7 +88,7 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     };
 
-    // Enqueue the job using pgmq
+    // Enqueue the job using our working custom function
     const { data: result, error } = await supabase.rpc('enqueue_site_generation', {
       p_domain: targetDomain,
       p_user_id: userId || null,

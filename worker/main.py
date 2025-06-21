@@ -29,24 +29,20 @@ class SiteGenerationWorker:
         logger.info(f"🤖 Site Generation Worker initialized: {self.worker_id}")
 
     async def poll_queue(self):
-        """Main queue polling loop using pgmq"""
-        logger.info("🔄 Starting pgmq queue polling...")
+        """Main queue polling loop using table-based approach"""
+        logger.info("🔄 Starting table-based queue polling...")
         
         while self.is_running:
             try:
-                # Read messages from pgmq queue
-                result = self.supabase.rpc('pgmq_read', {
-                    'queue_name': 'site_jobs_queue',
-                    'vt': 30,  # Visibility timeout in seconds
-                    'qty': 1   # Number of messages to read
-                }).execute()
+                # Query for queued jobs from site_jobs table
+                result = self.supabase.table('site_jobs').select('*').eq('status', 'queued').order('created_at').limit(1).execute()
                 
                 if result.data and len(result.data) > 0:
-                    message = result.data[0]
-                    msg_id = message['msg_id']
-                    payload = message['message']
+                    job = result.data[0]
+                    job_id = job['id']
+                    domain = job['domain']
                     
-                    logger.info(f"📋 Processing message {msg_id}: {payload['site_job_id']} for domain: {payload['domain']}")
+                    logger.info(f"📋 Processing job {job_id} for domain: {domain}")
                     
                     try:
                         # Mark job as processing
@@ -54,23 +50,26 @@ class SiteGenerationWorker:
                             'status': 'processing',
                             'worker_id': self.worker_id,
                             'started_at': datetime.now().isoformat()
-                        }).eq('id', payload['site_job_id']).execute()
+                        }).eq('id', job_id).execute()
                         
                         # Process the job
-                        await self.process_job(payload)
+                        await self.process_job({
+                            'site_job_id': job_id,
+                            'domain': domain,
+                            'user_id': job.get('user_id'),
+                            'job_data': job.get('job_data', {})
+                        })
                         
-                        # Delete message from queue after successful processing
-                        self.supabase.rpc('pgmq_delete', {
-                            'queue_name': 'site_jobs_queue',
-                            'msg_id': msg_id
-                        }).execute()
-                        
-                        logger.info(f"✅ Job completed and message {msg_id} deleted")
+                        logger.info(f"✅ Job {job_id} completed successfully")
                         
                     except Exception as job_error:
                         logger.error(f"❌ Job processing failed: {job_error}")
-                        # Don't delete the message, let it become visible again for retry
-                        # pgmq will automatically make it visible after visibility timeout
+                        # Update job status to failed
+                        self.supabase.table('site_jobs').update({
+                            'status': 'failed',
+                            'error_message': str(job_error),
+                            'completed_at': datetime.now().isoformat()
+                        }).eq('id', job_id).execute()
                     
                 else:
                     # No jobs available, wait before polling again
