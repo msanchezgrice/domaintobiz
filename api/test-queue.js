@@ -1,9 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Check for required environment variables
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Missing Supabase environment variables:', {
+    SUPABASE_URL: !!supabaseUrl,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY
+  });
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -16,6 +25,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Check environment variables first
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        error: 'Configuration error',
+        message: 'Missing Supabase environment variables',
+        needed: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY'],
+        available: {
+          SUPABASE_URL: !!supabaseUrl,
+          SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY
+        }
+      });
+    }
+
     if (req.method === 'GET') {
       // Test reading from queue
       console.log('🔍 Testing queue read...');
