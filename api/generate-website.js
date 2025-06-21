@@ -203,7 +203,7 @@ function generateHTML(domain, strategy, designSystem, websiteContent) {
   
   // Use the actual hero content structure
   const heroTitle = hero.headline || hero.title || strategy.businessModel?.businessConcept || domain;
-  const heroSubtitle = hero.subheadline || hero.subtitle || strategy.businessModel?.valueProposition || 'Transform Your Business';
+  const heroSubtitle = hero.subheadline || hero.subtitle || strategy.businessModel?.valueProposition || 'Professional business solutions';
 
   const features = sections.features?.items || 
     websiteContent?.sections?.find(s => s.id === 'features')?.features ||

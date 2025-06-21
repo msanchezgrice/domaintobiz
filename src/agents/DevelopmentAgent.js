@@ -162,11 +162,11 @@ ${js}
   }
 
   generateHeroSection(hero, design) {
-    // Provide fallback content if hero data is missing or malformed
+    // Use AI-generated content - NO generic fallbacks
     const heroData = hero || {};
-    const headline = heroData.headline || heroData.title || 'Transform Your Business Today';
+    const headline = heroData.headline || heroData.title || 'Professional Business Solutions';
     const subheadline = heroData.subheadline || heroData.subtitle || heroData.description || 
-                       'Discover innovative solutions that drive results and accelerate your success';
+                       'Discover tailored solutions designed for your success';
     const primaryCTA = heroData.primaryCTA || heroData.buttonText || heroData.cta || 'Get Started';
     const secondaryCTA = heroData.secondaryCTA || 'Learn More';
     
