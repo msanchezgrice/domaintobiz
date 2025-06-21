@@ -43,20 +43,55 @@ export default async function handler(req, res) {
       // Test reading from queue
       console.log('🔍 Testing queue read...');
       
-      const { data: messages, error: readError } = await supabase.rpc('pgmq_read', {
-        queue_name: 'site_jobs_queue',
-        vt: 30,
-        qty: 5
-      });
+      // First, let's see what pgmq functions are available
+      try {
+        const { data: functions } = await supabase
+          .from('pg_proc')
+          .select('proname')
+          .like('proname', '%pgmq%')
+          .limit(10);
+        console.log('🔧 Available pgmq functions:', functions?.map(f => f.proname) || 'none found');
+      } catch (funcError) {
+        console.log('🔧 Could not query available functions');
+      }
+      
+      // Try to read from pgmq queue using SQL directly
+      let messages, readError;
+      
+      const directRead = await supabase
+        .from('pgmq_site_jobs_queue')
+        .select('*')
+        .limit(5);
+      
+      messages = directRead.data;
+      readError = directRead.error;
 
       if (readError) {
-        throw new Error(`Queue read failed: ${readError.message}`);
+        console.log('❌ Direct table read failed, trying RPC...');
+        // Try alternative RPC call
+        const { data: rpcMessages, error: rpcError } = await supabase.rpc('pgmq.read', {
+          queue_name: 'site_jobs_queue',
+          vt: 30,
+          qty: 5
+        });
+        
+        if (rpcError) {
+          throw new Error(`Queue read failed: ${rpcError.message}. Available functions might be different.`);
+        }
+        messages = rpcMessages;
       }
 
-      // Get queue stats
-      const { data: stats, error: statsError } = await supabase.rpc('pgmq_metrics', {
-        queue_name: 'site_jobs_queue'
-      });
+      // Get queue stats - try different approaches
+      let stats = null;
+      try {
+        const { data: queueStats } = await supabase
+          .from('pgmq_site_jobs_queue')
+          .select('msg_id, enqueued_at, vt')
+          .limit(1);
+        stats = { messageCount: queueStats?.length || 0 };
+      } catch (statsError) {
+        console.log('Stats unavailable:', statsError.message);
+      }
 
       return res.status(200).json({
         success: true,
@@ -79,6 +114,7 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString()
       };
 
+      // Test enqueueing - check if our custom function exists
       const { data: result, error } = await supabase.rpc('enqueue_site_generation', {
         p_domain: testDomain,
         p_user_id: null,
@@ -86,7 +122,31 @@ export default async function handler(req, res) {
       });
 
       if (error) {
-        throw new Error(`Enqueue failed: ${error.message}`);
+        console.log('❌ Custom enqueue function failed:', error.message);
+        
+        // Try direct table insert as fallback
+        const { data: directInsert, error: insertError } = await supabase
+          .from('site_jobs')
+          .insert({
+            domain: testDomain,
+            job_data: testData
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          throw new Error(`Both enqueue methods failed. Custom: ${error.message}, Direct: ${insertError.message}`);
+        }
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Test job created via direct insert (pgmq functions unavailable)',
+          data: {
+            jobId: directInsert.id,
+            domain: testDomain,
+            method: 'direct_insert'
+          }
+        });
       }
 
       const jobInfo = result[0];
