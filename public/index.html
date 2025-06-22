@@ -1195,15 +1195,13 @@
                     ]
                 });
 
-                const response = await fetch('/api/execute-v2', {
+                const response = await fetch('/api/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        domains: [domain],
-                        projectId: projectId,
-                        generateWebsite: true
+                        domain: domain
                     })
                 });
 
@@ -1224,22 +1222,18 @@
                     throw new Error(errorMessage);
                 }
 
-                if (data.success) {
-                    // Refresh projects to show the new website
-                    loadProjectsFromAPI(false);
-                    
+                if (data.success && data.jobId) {
                     showDialog({
                         type: 'success',
-                        title: 'Website Generated!',
-                        message: `Website has been successfully generated for ${domain}! You can now view it in your projects.`,
+                        title: 'Website Queued!',
+                        message: `Website generation for ${domain} has been queued! Job ID: ${data.jobId}. You can track progress in the Projects tab.`,
                         actions: [
                             {
-                                text: 'View Website',
+                                text: 'Track Progress',
                                 type: 'dialog-btn-primary',
                                 callback: () => {
-                                    if (data.result?.websiteUrl) {
-                                        window.open(data.result.websiteUrl, '_blank');
-                                    }
+                                    // Switch to projects tab to see the job progress
+                                    switchPage('projects');
                                 }
                             },
                             {
@@ -1249,6 +1243,9 @@
                             }
                         ]
                     });
+                    
+                    // Refresh projects to show the new job
+                    setTimeout(() => loadProjectsFromAPI(false), 1000);
                 } else {
                     throw new Error(data.error || 'Website generation failed');
                 }
@@ -1467,15 +1464,13 @@
             try {
                 statusText.textContent = `🚀 Generating strategy and website for ${bestDomain}...`;
                 
-                const response = await fetch('/api/execute-v2', {
+                const response = await fetch('/api/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        domains: [bestDomain],
-                        generateWebsite: true,
-                        analysisResult: analysis
+                        domain: bestDomain
                     })
                 });
                 
@@ -1499,21 +1494,16 @@
                 }
                 console.log('📊 Execute response data:', data);
                 
-                if (data.success) {
-                    statusText.textContent = `✅ Website generated successfully for ${bestDomain}!`;
+                if (data.success && data.jobId) {
+                    statusText.textContent = `✅ Website queued for generation! Job ID: ${data.jobId}`;
                     statusEl.classList.remove('error');
-                    
-                    // Refresh projects cache to show new website
-                    setTimeout(() => {
-                        refreshProjects();
-                    }, 1000);
                     
                     // Show success notification
                     setTimeout(() => {
                         showDialog({
                             type: 'success',
-                            title: 'Website Generated!',
-                            message: `Website generated successfully for ${bestDomain}! Would you like to view it in the Projects tab?`,
+                            title: 'Website Queued!',
+                            message: `Website generation for ${bestDomain} has been queued! You can track progress in the Projects tab.`,
                             actions: [
                                 {
                                     text: 'Stay Here',
@@ -1521,7 +1511,7 @@
                                     callback: () => {}
                                 },
                                 {
-                                    text: 'View Projects',
+                                    text: 'Track Progress',
                                     type: 'dialog-btn-primary',
                                     callback: () => switchPage('projects')
                                 }
