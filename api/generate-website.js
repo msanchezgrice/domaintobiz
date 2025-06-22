@@ -1,11 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import nunjucks from 'nunjucks';
 import path from 'path';
+import fs from 'fs';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+// Read the template file at build time and store it as a string
+const templatePath = path.join(process.cwd(), 'templates', 'htmx', 'index.html.jinja');
+const templateString = fs.readFileSync(templatePath, 'utf-8');
 
 // Configure Nunjucks
 const templateDir = path.join(process.cwd(), 'templates');
@@ -52,18 +57,8 @@ export default async function handler(req, res) {
       }
     };
     
-    // Render the HTMX template
-    let renderedHtml;
-    try {
-      console.log(`[${domain}] Rendering template 'htmx/index.html.jinja' with provided data.`);
-      renderedHtml = nunjucks.render('htmx/index.html.jinja', templateData);
-      console.log(`[${domain}] Template rendered successfully.`);
-    } catch (renderError) {
-      console.error(`[${domain}] Nunjucks render error:`, renderError);
-      // Log the full error object for more details
-      console.error(JSON.stringify(renderError, null, 2));
-      throw new Error(`Template rendering failed: ${renderError.message}`);
-    }
+    // Render the HTMX template from the in-memory string
+    const renderedHtml = nunjucks.renderString(templateString, templateData);
     
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
     const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;

@@ -32,8 +32,8 @@ export default async function handler(req, res) {
 
     const { data: sites, error: sitesError } = await supabase
       .from('sites')
-      .select('domain, deployed_url, thumbnail_url, paid, updated_at')
-      .order('updated_at', { ascending: false });
+      .select('domain, deployed_url, paid')
+      .order('created_at', { ascending: false });
 
     if (sitesError) {
       console.warn('Sites query partially failed, continuing without full site data:', sitesError.message);
@@ -54,7 +54,6 @@ export default async function handler(req, res) {
         startedAt: job.started_at,
         completedAt: job.completed_at,
         title: strategy?.brandStrategy?.name || job.domain, // Derived title, not from DB
-        thumbnailUrl: site?.thumbnail_url,
         paid: site?.paid || false,
         businessType: strategy?.businessModel?.type || 'Business',
         brandPositioning: strategy?.brandStrategy?.positioning || 'Professional Service',
