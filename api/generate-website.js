@@ -1,26 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import nunjucks from 'nunjucks';
 import path from 'path';
-import fs from 'fs';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// --- START: Definitive Template Inlining ---
-// Read all templates into memory at build time to bypass Vercel filesystem issues.
-const templatesPath = path.join(process.cwd(), 'templates', 'htmx');
-const mainTemplateString = fs.readFileSync(path.join(templatesPath, 'index.html.jinja'), 'utf-8');
-const navbarString = fs.readFileSync(path.join(templatesPath, 'partials', 'navbar.html.jinja'), 'utf-8');
-const footerString = fs.readFileSync(path.join(templatesPath, 'partials', 'footer.html.jinja'), 'utf-8');
-
-// Manually replace the {% include %} tags with the actual partial content.
-const finalTemplateString = mainTemplateString
-  .replace("{% include 'partials/navbar.html.jinja' %}", navbarString)
-  .replace("{% include 'partials/footer.html.jinja' %}", footerString);
-
-// --- END: Definitive Template Inlining ---
+// --- START: Definitive Nunjucks Environment ---
+// This is the correct way to configure Nunjucks to find templates and their partials.
+const nunjucksEnv = new nunjucks.Environment(
+  new nunjucks.FileSystemLoader(path.join(process.cwd(), 'templates')),
+  { autoescape: true }
+);
+// --- END: Definitive Nunjucks Environment ---
 
 export default async function handler(req, res) {
   // Standard headers and method checks
@@ -40,10 +33,10 @@ export default async function handler(req, res) {
     const { domain, strategy, designSystem, websiteContent, executionId } = req.body;
 
     if (!domain || !strategy || !designSystem || !websiteContent) {
-      return res.status(400).json({ error: 'Missing required data: domain, strategy, designSystem, and websiteContent are required.' });
+      return res.status(400).json({ error: 'Missing required data' });
     }
 
-    console.log(`[${domain}] Generating website using inlined HTMX templates...`);
+    console.log(`[${domain}] Rendering HTMX template with Nunjucks...`);
 
     const templateData = {
       brand: {
@@ -58,17 +51,17 @@ export default async function handler(req, res) {
       }
     };
     
-    // Render the final, inlined template string
-    const renderedHtml = nunjucks.renderString(finalTemplateString, templateData);
+    // Use nunjucks.render() with the file path, not renderString.
+    // This allows the configured loader to find the main template and its partials.
+    const renderedHtml = nunjucksEnv.render('htmx/index.html.jinja', templateData);
     
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
-    const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;
+    const deploymentUrl = `https://domaintobiz.vercel.app/sites/${deploymentSlug}`;
 
     const { data: savedWebsite, error: dbError } = await supabase
       .from('generated_websites')
       .insert({
         domain: domain,
-        original_domain: domain,
         website_data: { strategy, designSystem, websiteContent, executionId },
         deployment_url: deploymentUrl,
         website_html: renderedHtml,
@@ -84,8 +77,6 @@ export default async function handler(req, res) {
       throw new Error(`Database save failed: ${dbError.message}`);
     }
 
-    console.log(`[${domain}] Website saved to DB with ID: ${savedWebsite.id}`);
-
     await supabase.from('website_deployments').insert({
       website_id: savedWebsite.id,
       deployment_url: deploymentUrl,
@@ -94,7 +85,7 @@ export default async function handler(req, res) {
       deployed_at: new Date().toISOString()
     });
 
-    console.log(`[${domain}] Website generation completed successfully.`);
+    console.log(`[${domain}] Website generated successfully.`);
 
     return res.status(200).json({
       success: true,
