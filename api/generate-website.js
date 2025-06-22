@@ -4,7 +4,7 @@ import { join } from 'path';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 export default async function handler(req, res) {
@@ -22,22 +22,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Validate request body
     if (!req.body) {
       return res.status(400).json({ error: 'Request body is required' });
     }
 
-    let parsedBody;
-    try {
-      parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    } catch (parseError) {
-      return res.status(400).json({ 
-        error: 'Invalid JSON in request body',
-        details: parseError.message 
-      });
-    }
-
-    const { domain, strategy, designSystem, websiteContent, executionId } = parsedBody;
+    const { domain, strategy, designSystem, websiteContent, executionId } = req.body;
 
     if (!domain || !strategy) {
       return res.status(400).json({ 
@@ -45,121 +34,69 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log(`🌐 Generating website for ${domain}`);
+    console.log(`🌐 Generating website for ${domain} using modern templates...`);
 
-    // Generate unique deployment slug
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
     const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;
 
-    // Generate HTML content
-    const htmlContent = generateHTML(domain, strategy, designSystem, websiteContent);
-    const cssContent = generateCSS(designSystem);
-    const jsContent = generateJS(domain);
-    const manifestContent = generateManifest(domain, strategy);
-
-    // Create deployment directory
-    const deploymentPath = `/tmp/deployments/${deploymentSlug}`;
-    try {
-      mkdirSync(deploymentPath, { recursive: true });
-      
-      // Write files to deployment directory
-      writeFileSync(join(deploymentPath, 'index.html'), htmlContent);
-      writeFileSync(join(deploymentPath, 'styles.css'), cssContent);
-      writeFileSync(join(deploymentPath, 'script.js'), jsContent);
-      writeFileSync(join(deploymentPath, 'manifest.json'), manifestContent);
-      
-      console.log(`✅ Website files generated in ${deploymentPath}`);
-    } catch (fsError) {
-      console.warn('⚠️ Could not write to filesystem (Vercel limitation), storing in database only');
-    }
-
-    // Store website files in database
-    const websiteRecord = {
-      domain: domain,
-      original_domain: domain,
+    // Create a website object compatible with our new template functions
+    const website = {
+      domain,
       website_data: {
         strategy,
         designSystem,
-        websiteContent,
-        executionId
-      },
-      deployment_url: deploymentUrl,
-      website_html: htmlContent,
-      website_css: cssContent,
-      website_js: jsContent,
-      deployment_id: executionId,
-      status: 'completed',
-      completed_at: new Date().toISOString()
+        websiteContent
+      }
     };
-
-    // Save to generated_websites table
+    
+    const htmlContent = getDefaultHTML(website);
+    const cssContent = getDefaultCSS();
+    const jsContent = getDefaultJS();
+    const manifestContent = generateManifest(domain, strategy);
+    
+    // Store website files in the database
     const { data: savedWebsite, error: dbError } = await supabase
       .from('generated_websites')
-      .insert(websiteRecord)
+      .insert({
+        domain: domain,
+        original_domain: domain,
+        website_data: {
+          strategy,
+          designSystem,
+          websiteContent,
+          executionId
+        },
+        deployment_url: deploymentUrl,
+        website_html: htmlContent,
+        website_css: cssContent,
+        website_js: jsContent,
+        deployment_id: executionId,
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      })
       .select()
       .single();
 
     if (dbError) {
-      console.error('❌ Database error when saving website:', {
-        error: dbError,
-        message: dbError.message,
-        details: dbError.details,
-        hint: dbError.hint,
-        code: dbError.code
+      console.error('❌ Database error when saving website:', dbError);
+      throw new Error(`Database save failed: ${dbError.message}`);
+    }
+
+    console.log('✅ Website saved to database with ID:', savedWebsite.id);
+
+    // Create deployment record
+    const { error: deploymentError } = await supabase
+      .from('website_deployments')
+      .insert({
+        website_id: savedWebsite.id,
+        deployment_url: deploymentUrl,
+        deployment_slug: deploymentSlug,
+        deployment_status: 'ready',
+        deployed_at: new Date().toISOString()
       });
       
-      // Database error is not critical for website generation
-      // Continue with success but note the database issue
-      console.warn('⚠️ Website generated successfully but database save failed');
-    } else {
-      console.log('✅ Website saved to database with ID:', savedWebsite?.id);
-
-      try {
-        // Save individual files to website_files table
-        const files = [
-          { file_name: 'index.html', file_content: htmlContent, file_type: 'html' },
-          { file_name: 'styles.css', file_content: cssContent, file_type: 'css' },
-          { file_name: 'script.js', file_content: jsContent, file_type: 'js' },
-          { file_name: 'manifest.json', file_content: manifestContent, file_type: 'json' }
-        ];
-
-        for (const file of files) {
-          const { error: fileError } = await supabase
-            .from('website_files')
-            .insert({
-              website_id: savedWebsite.id,
-              ...file
-            });
-            
-          if (fileError) {
-            console.warn('⚠️ Failed to save file to database:', file.file_name, fileError.message);
-          }
-        }
-
-        // Create deployment record
-        const { error: deploymentError } = await supabase
-          .from('website_deployments')
-          .insert({
-            website_id: savedWebsite.id,
-            deployment_url: deploymentUrl,
-            deployment_slug: deploymentSlug,
-            deployment_status: 'ready',
-            deployment_data: {
-              domain,
-              executionId,
-              filesGenerated: files.length,
-              generatedAt: new Date().toISOString()
-            },
-            deployed_at: new Date().toISOString()
-          });
-          
-        if (deploymentError) {
-          console.warn('⚠️ Failed to save deployment record:', deploymentError.message);
-        }
-      } catch (fileOperationError) {
-        console.warn('⚠️ Error during database file operations:', fileOperationError.message);
-        // Continue anyway - the main website was saved
-      }
+    if (deploymentError) {
+      console.warn('⚠️ Failed to save deployment record:', deploymentError.message);
     }
 
     console.log(`🎉 Website generation completed for ${domain}`);
@@ -171,7 +108,7 @@ export default async function handler(req, res) {
         domain,
         deploymentUrl,
         deploymentSlug,
-        websiteId: savedWebsite?.id,
+        websiteId: savedWebsite.id,
         files: ['index.html', 'styles.css', 'script.js', 'manifest.json'],
         status: 'completed'
       },
@@ -187,19 +124,7 @@ export default async function handler(req, res) {
   }
 }
 
-function generateHTML(domain, strategy, designSystem, websiteContent) {
-  // Use the same modern template system as serve-site.js
-  const website = {
-    domain: domain,
-    website_data: {
-      strategy: strategy,
-      designSystem: designSystem,
-      websiteContent: websiteContent
-    }
-  };
-  
-  return getDefaultHTML(website);
-}
+// --- Start of Templating Functions ---
 
 function getDefaultHTML(website) {
   const domain = website?.domain || 'Business Website';
@@ -441,10 +366,6 @@ ${js}
     </script>
 </body>
 </html>`;
-}
-
-function generateCSS(designSystem) {
-  return getDefaultCSS();
 }
 
 function getDefaultCSS() {
@@ -1323,29 +1244,6 @@ body {
 }`;
 }
 
-function generateJS(domain) {
-  return getDefaultJS();
-}
-
-function generateManifest(domain, strategy) {
-  return JSON.stringify({
-    name: `${domain} - ${strategy.brandStrategy?.positioning || 'Business Solution'}`,
-    short_name: domain,
-    description: strategy.businessModel?.description || `Business website for ${domain}`,
-    start_url: "/",
-    display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#3B82F6",
-    icons: [
-      {
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%233B82F6'/%3E%3Ctext x='50' y='55' font-family='Arial' font-size='40' fill='white' text-anchor='middle'%3E${domain.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E",
-        sizes: "192x192",
-        type: "image/svg+xml"
-      }
-    ]
-  }, null, 2);
-}
-
 function getDefaultJS() {
   return `// Modern Website functionality
 
@@ -1556,21 +1454,19 @@ function initCounters() {
             }
         };
         
-        updateCounter();
-    };
-    
-    const counterObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                animateCounter(entry.target);
-                counterObserver.unobserve(entry.target);
-            }
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounter(entry.target);
+                    counterObserver.unobserve(entry.target);
+                }
+            });
         });
-    });
-    
-    counters.forEach(counter => {
-        counterObserver.observe(counter);
-    });
+        
+        counters.forEach(counter => {
+            counterObserver.observe(counter);
+        });
+    };
 }
 
 // Notification system
@@ -1637,7 +1533,21 @@ window.WebsiteUtils = {
 console.log('✨ Modern AI-generated website functionality initialized!');`;
 }
 
-// Helper function to convert hex to RGB
-function hexToRgb(hex) {
-  // ... existing code ...
+function generateManifest(domain, strategy) {
+  return JSON.stringify({
+    name: `${domain} - ${strategy.brandStrategy?.positioning || 'Business Solution'}`,
+    short_name: domain,
+    description: strategy.businessModel?.description || `Business website for ${domain}`,
+    start_url: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#6366F1",
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%236366F1'/%3E%3Ctext x='50' y='55' font-family='Arial' font-size='40' fill='white' text-anchor='middle'%3E${domain.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E",
+        sizes: "192x192",
+        type: "image/svg+xml"
+      }
+    ]
+  }, null, 2);
 }
