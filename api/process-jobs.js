@@ -145,12 +145,17 @@ async function processJobSteps(job) {
 
     console.log(`✅ [${domain}] Website generated, URL: ${websiteData.data.deploymentUrl}`);
     
-    // Insert into public 'sites' table to update the UI
-    await supabase.from('sites').insert({
+    // Upsert into public 'sites' table to update the UI
+    await supabase.from('sites').upsert(
+      {
         job_id: job.id,
         domain: domain,
         deployed_url: websiteData.data.deploymentUrl,
-    }).onConflict('domain').merge();
+      },
+      {
+        onConflict: 'domain',
+      }
+    );
     
     console.log(`✅ [${domain}] 'sites' table updated.`);
 
