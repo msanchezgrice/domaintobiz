@@ -80,59 +80,37 @@ async function processJobSteps(job) {
   try {
     const domain = job.domain;
     const jobData = job.job_data || {};
-
-    console.log(`🔄 Processing ${domain}...`);
-
-    // Step 1: Domain Analysis (call existing API)
     const baseUrl = 'https://domaintobiz.vercel.app';
+
+    console.log(`🔄 [${domain}] Step 1: Domain Analysis`);
     const analysisResponse = await fetch(`${baseUrl}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domains: [domain] })
     });
-
-    if (!analysisResponse.ok) {
-      throw new Error(`Domain analysis failed: ${analysisResponse.status}`);
-    }
-
+    if (!analysisResponse.ok) throw new Error(`Domain analysis failed: ${analysisResponse.status}`);
     const analysisData = await analysisResponse.json();
     const domainAnalysis = analysisData.data?.bestDomain;
-
-    // Step 2: Strategy Generation
+    
+    console.log(`🔄 [${domain}] Step 2: Strategy Generation`);
     const strategyResponse = await fetch(`${baseUrl}/api/strategy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        domainAnalysis,
-        analysisId: `vercel_${Date.now()}`,
-        regenerate: jobData.regenerate || false
-      })
+      body: JSON.stringify({ domainAnalysis, analysisId: `vercel_${Date.now()}` })
     });
-
-    if (!strategyResponse.ok) {
-      throw new Error(`Strategy generation failed: ${strategyResponse.status}`);
-    }
-
+    if (!strategyResponse.ok) throw new Error(`Strategy generation failed: ${strategyResponse.status}`);
     const strategyData = await strategyResponse.json();
 
-    // Step 3: Design Generation
+    console.log(`🔄 [${domain}] Step 3: Design Generation`);
     const designResponse = await fetch(`${baseUrl}/api/agents/design`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        domain,
-        strategy: strategyData.data,
-        executionId: `vercel_${Date.now()}`
-      })
+      body: JSON.stringify({ domain, strategy: strategyData.data, executionId: `vercel_${Date.now()}` })
     });
-
-    if (!designResponse.ok) {
-      throw new Error(`Design generation failed: ${designResponse.status}`);
-    }
-
+    if (!designResponse.ok) throw new Error(`Design generation failed: ${designResponse.status}`);
     const designData = await designResponse.json();
 
-    // Step 4: Content Generation
+    console.log(`🔄 [${domain}] Step 4: Content Generation`);
     const contentResponse = await fetch(`${baseUrl}/api/agents/content`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,14 +121,10 @@ async function processJobSteps(job) {
         executionId: `vercel_${Date.now()}`
       })
     });
-
-    if (!contentResponse.ok) {
-      throw new Error(`Content generation failed: ${contentResponse.status}`);
-    }
-
+    if (!contentResponse.ok) throw new Error(`Content generation failed: ${contentResponse.status}`);
     const contentData = await contentResponse.json();
 
-    // Step 5: Website Generation (final step)
+    console.log(`🔄 [${domain}] Step 5: Website Generation`);
     const websiteResponse = await fetch(`${baseUrl}/api/generate-website`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -162,12 +136,23 @@ async function processJobSteps(job) {
         executionId: `vercel_${Date.now()}`
       })
     });
+    if (!websiteResponse.ok) throw new Error(`Website generation failed with status ${websiteResponse.status}`);
+    const websiteData = await websiteResponse.json();
 
-    if (!websiteResponse.ok) {
-      throw new Error(`Website generation failed: ${websiteResponse.status}`);
+    if (!websiteData.success) {
+        throw new Error(`Website generation failed: ${websiteData.message || 'Unknown error'}`);
     }
 
-    const websiteData = await websiteResponse.json();
+    console.log(`✅ [${domain}] Website generated, URL: ${websiteData.data.deploymentUrl}`);
+    
+    // Insert into public 'sites' table to update the UI
+    await supabase.from('sites').insert({
+        job_id: job.id,
+        domain: domain,
+        deployed_url: websiteData.data.deploymentUrl,
+    }).onConflict('domain').merge();
+    
+    console.log(`✅ [${domain}] 'sites' table updated.`);
 
     return {
       success: true,
@@ -183,7 +168,7 @@ async function processJobSteps(job) {
     };
 
   } catch (error) {
-    console.error(`❌ Job processing failed:`, error);
+    console.error(`❌ [${job.domain}] Job processing failed:`, error);
     return {
       success: false,
       error: error.message,
