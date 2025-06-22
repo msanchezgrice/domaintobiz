@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   try {
     const { user_email } = req.query;
 
-    // Get active jobs
+    // Get active jobs (queued and processing)
     const { data: jobs, error } = await supabase
       .from('site_jobs')
       .select(`
@@ -21,10 +21,11 @@ export default async function handler(req, res) {
         domain,
         status,
         progress,
-        result,
+        result_data,
+        error_message,
         created_at,
         updated_at,
-        estimated_completion
+        started_at
       `)
       .in('status', ['queued', 'processing'])
       .order('created_at', { ascending: false })
@@ -35,7 +36,7 @@ export default async function handler(req, res) {
     }
 
     // Generate HTML for the jobs
-    const jobsHtml = jobs.length > 0 
+    const jobsHtml = jobs && jobs.length > 0 
       ? jobs.map(job => generateJobHtml(job)).join('')
       : `
         <div class="text-center py-8">
@@ -46,6 +47,14 @@ export default async function handler(req, res) {
           </div>
           <p class="text-gray-500 text-lg mb-2">No active jobs</p>
           <p class="text-gray-400 text-sm">Your new sites will appear here while they're being built.</p>
+          <div class="mt-4">
+            <button 
+              onclick="window.location.reload()"
+              class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
       `;
 
@@ -62,7 +71,10 @@ export default async function handler(req, res) {
           <svg class="w-5 h-5 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
           </svg>
-          <p class="text-red-800">Failed to load jobs. Please refresh the page.</p>
+          <div>
+            <p class="text-red-800 font-medium">Failed to load jobs</p>
+            <p class="text-red-700 text-sm">Please refresh the page or try again later.</p>
+          </div>
         </div>
       </div>
     `;
@@ -90,19 +102,33 @@ function generateJobHtml(job) {
   const progress = job.progress || 0;
   const timeAgo = getTimeAgo(job.created_at);
 
+  // Calculate estimated time remaining
+  const startedAt = job.started_at ? new Date(job.started_at) : null;
+  const estimatedDuration = 5; // 5 minutes typical
+  let timeRemaining = '';
+  
+  if (job.status === 'processing' && startedAt) {
+    const elapsed = (Date.now() - startedAt.getTime()) / 1000 / 60; // minutes
+    const remaining = Math.max(0, estimatedDuration - elapsed);
+    timeRemaining = remaining > 1 ? `~${Math.ceil(remaining)}min remaining` : 'Almost done...';
+  } else if (job.status === 'queued') {
+    timeRemaining = '~5min estimated';
+  }
+
   return `
-    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+    <div class="border border-gray-200 rounded-lg p-4 mb-4 bg-white hover:shadow-md transition-shadow">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center space-x-3">
-          <div class="text-${statusColor}-500">
+          <div class="text-${statusColor}-500 flex-shrink-0">
             ${statusIcon}
           </div>
-          <div>
-            <h3 class="font-medium text-gray-900">${job.domain}</h3>
+          <div class="min-w-0 flex-1">
+            <h3 class="font-medium text-gray-900 truncate">${job.domain}</h3>
             <p class="text-sm text-gray-500">Started ${timeAgo}</p>
+            ${timeRemaining ? `<p class="text-xs text-gray-400">${timeRemaining}</p>` : ''}
           </div>
         </div>
-        <span class="px-2 py-1 text-xs font-medium rounded-full bg-${statusColor}-100 text-${statusColor}-800 capitalize">
+        <span class="px-2 py-1 text-xs font-medium rounded-full bg-${statusColor}-100 text-${statusColor}-800 capitalize flex-shrink-0">
           ${job.status}
         </span>
       </div>
@@ -119,9 +145,9 @@ function generateJobHtml(job) {
         </div>
       ` : ''}
       
-      ${job.status === 'completed' && job.result?.deployed_url ? `
+      ${job.status === 'completed' && job.result_data?.website?.deployed_url ? `
         <div class="flex items-center space-x-2">
-          <a href="${job.result.deployed_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          <a href="${job.result_data.website.deployed_url}" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
             View Site →
           </a>
         </div>
@@ -129,9 +155,27 @@ function generateJobHtml(job) {
       
       ${job.status === 'failed' ? `
         <div class="text-red-600 text-sm">
-          <p>Build failed. Please try again or contact support.</p>
+          <p>Build failed: ${job.error_message || 'Unknown error'}</p>
+          <button 
+            onclick="retryJob('${job.id}')" 
+            class="mt-2 text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200"
+          >
+            Retry
+          </button>
         </div>
       ` : ''}
+      
+      <div class="mt-2 flex items-center justify-between text-xs text-gray-400">
+        <span>Job ID: ${job.id.substring(0, 8)}...</span>
+        ${job.status === 'processing' ? `
+          <button 
+            onclick="refreshJobs()" 
+            class="text-blue-600 hover:text-blue-800"
+          >
+            Refresh
+          </button>
+        ` : ''}
+      </div>
     </div>
   `;
 }

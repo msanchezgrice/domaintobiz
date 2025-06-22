@@ -112,32 +112,55 @@ export default async function handler(req, res) {
     const jobInfo = result[0];
     console.log(`✅ Job enqueued successfully: ${jobInfo.job_id} (msg: ${jobInfo.queue_msg_id})`);
 
-    // Return job info immediately (202 Accepted)
-    return res.status(202).json({
+    // Return success response immediately
+    const response = {
       success: true,
-      message: 'Site generation job enqueued successfully',
       jobId: jobInfo.job_id,
-      queueMsgId: jobInfo.queue_msg_id,
+      message: `Job created for domain: ${targetDomain}`,
       domain: targetDomain,
+      estimatedCompletion: '2-5 minutes',
       status: 'queued',
-      estimatedTime: '2-5 minutes',
-      regenerate: !!regenerate,
-      timestamp: new Date().toISOString(),
-      // Include tracking URLs
       statusUrl: `/api/job-status?jobId=${jobInfo.job_id}`,
       progressUrl: `/api/job-progress?jobId=${jobInfo.job_id}`
+    };
+
+    // Trigger background processing (non-blocking)
+    triggerJobProcessing().catch(error => {
+      console.error('Background processing trigger failed:', error);
+      // Don't fail the request - just log the error
     });
 
+    return res.status(202).json(response);
+
   } catch (error) {
-    console.error('❌ Submit API failed:', {
-      message: error.message,
-      stack: error.stack,
-      requestBody: req.body
-    });
-    
-    return res.status(500).json({ 
-      error: 'Failed to submit site generation request', 
+    console.error('Submit error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to submit job',
       message: error.message
     });
+  }
+}
+
+// Function to trigger background job processing
+async function triggerJobProcessing() {
+  try {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'https://domaintobiz.vercel.app';
+    
+    console.log('🚀 Triggering queue scheduler...');
+    
+    // Trigger the queue scheduler (don't wait for response)
+    fetch(`${baseUrl}/api/queue/scheduler`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trigger: 'submit' })
+    }).catch(error => {
+      console.error('Failed to trigger scheduler:', error);
+    });
+    
+  } catch (error) {
+    console.error('Background trigger error:', error);
   }
 } 

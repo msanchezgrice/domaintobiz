@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY  // Use service role for full access
 );
 
 export default async function handler(req, res) {
@@ -31,80 +31,112 @@ export default async function handler(req, res) {
       return await handleSingleProject(req, res, id, domain);
     }
 
-    console.log('📊 Fetching projects from database...');
+    console.log('📊 Fetching jobs and sites from new queue system...');
 
-    // Get all completed projects with deployment info
-    const { data: projects, error: projectsError } = await supabase
-      .from('generated_websites')
+    // Get all jobs (both active and completed) from the new queue system
+    const { data: jobs, error: jobsError } = await supabase
+      .from('site_jobs')
       .select(`
         id,
         domain,
-        original_domain,
-        deployment_url,
+        status,
+        progress,
+        result_data,
+        error_message,
         created_at,
-        completed_at,
-        website_data,
-        deployment_id,
-        status
+        started_at,
+        completed_at
       `)
-      .eq('status', 'completed')
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (projectsError) {
-      console.error('❌ Database error:', projectsError);
+    if (jobsError) {
+      console.error('❌ Jobs query error:', jobsError);
       return res.status(500).json({ 
-        error: 'Failed to fetch projects',
-        details: projectsError.message 
+        error: 'Failed to fetch jobs',
+        details: jobsError.message 
       });
     }
 
-    // Get analytics/stats
-    const { data: statsData, error: statsError } = await supabase
-      .from('generated_websites')
-      .select('status')
-      .limit(1000);
+    // Get completed sites data
+    const { data: sites, error: sitesError } = await supabase
+      .from('sites')
+      .select(`
+        id,
+        domain,
+        title,
+        deployed_url,
+        thumbnail_url,
+        created_at,
+        updated_at,
+        paid
+      `)
+      .order('created_at', { ascending: false });
 
-    const stats = {
-      totalProjects: projects?.length || 0,
-      deployed: projects?.filter(p => p.deployment_url)?.length || 0,
-      avgScore: 75, // Placeholder - could calculate from analysis data
-      successRate: projects?.length ? 
-        Math.round((projects.filter(p => p.status === 'completed').length / projects.length) * 100) : 
-        100
-    };
+    if (sitesError) {
+      console.error('❌ Sites query error:', sitesError);
+      // Don't fail the request, just log the error
+      console.log('Continuing without sites data...');
+    }
 
-    // Transform projects for frontend
-    const transformedProjects = projects?.map(project => {
-      const strategy = project.website_data?.strategy;
-      const analysisData = project.website_data?.domainAnalysis;
+    // Combine jobs with site data
+    const transformedProjects = jobs?.map(job => {
+      const site = sites?.find(s => s.domain === job.domain);
+      const resultData = job.result_data || {};
+      
+      // Extract business info from result data
+      const strategy = resultData.strategy;
+      const analysis = resultData.domainAnalysis;
       
       return {
-        id: project.id,
-        domain: project.domain,
-        originalDomain: project.original_domain,
-        deploymentUrl: project.deployment_url,
-        createdAt: project.created_at,
-        completedAt: project.completed_at,
-        deploymentId: project.deployment_id,
-        status: project.status,
-        businessType: strategy?.businessModel?.type || 'Unknown',
-        brandPositioning: strategy?.brandStrategy?.positioning || 'Business Solution',
-        description: strategy?.businessModel?.description || `Business website for ${project.domain}`,
-        score: analysisData?.score || Math.floor(Math.random() * 40) + 60, // Use real score or fallback
-        features: strategy?.mvpScope?.features || ['Landing Page', 'Contact Form'],
+        id: job.id,
+        domain: job.domain,
+        status: job.status,
+        progress: job.progress || 0,
+        deploymentUrl: site?.deployed_url || resultData.website?.deployed_url,
+        createdAt: job.created_at,
+        startedAt: job.started_at,
+        completedAt: job.completed_at,
+        title: site?.title || strategy?.brandStrategy?.name || job.domain,
+        thumbnailUrl: site?.thumbnail_url,
+        paid: site?.paid || false,
+        
+        // Business data for display
+        businessType: strategy?.businessModel?.type || 'Business',
+        brandPositioning: strategy?.brandStrategy?.positioning || 'Professional Service',
+        description: strategy?.businessModel?.description || `AI-generated website for ${job.domain}`,
+        score: analysis?.score || 85,
+        features: strategy?.mvpScope?.features || ['Landing Page', 'Modern Design'],
         tags: [
-          strategy?.businessModel?.type || 'Business',
-          strategy?.brandStrategy?.brandPersonality || 'Professional'
-        ].filter(Boolean)
+          job.status,
+          strategy?.businessModel?.type || 'Business'
+        ].filter(Boolean),
+        
+        // Error info if failed
+        errorMessage: job.error_message,
+        
+        // Full data for project details
+        resultData: resultData
       };
     }) || [];
 
-    console.log(`✅ Found ${transformedProjects.length} projects`);
+    // Calculate stats
+    const stats = {
+      totalProjects: transformedProjects.length,
+      active: transformedProjects.filter(p => ['queued', 'processing'].includes(p.status)).length,
+      completed: transformedProjects.filter(p => p.status === 'completed').length,
+      failed: transformedProjects.filter(p => p.status === 'failed').length,
+      deployed: transformedProjects.filter(p => p.deploymentUrl).length,
+      successRate: transformedProjects.length ? 
+        Math.round((transformedProjects.filter(p => p.status === 'completed').length / transformedProjects.length) * 100) : 
+        100
+    };
+
+    console.log(`✅ Found ${transformedProjects.length} projects/jobs. Active: ${stats.active}, Completed: ${stats.completed}, Failed: ${stats.failed}`);
 
     return res.status(200).json({
       success: true,
-      projects: transformedProjects, // Changed to match frontend expectation
+      projects: transformedProjects,
       data: {
         projects: transformedProjects,
         stats,
@@ -126,23 +158,20 @@ export default async function handler(req, res) {
 
 async function handleSingleProject(req, res, id, domain) {
   try {
-    console.log(`🔍 Fetching single project: id=${id}, domain=${domain}`);
+    console.log(`🔍 Fetching single job: id=${id}, domain=${domain}`);
     
     let query = supabase
-      .from('generated_websites')
+      .from('site_jobs')
       .select(`
         id,
         domain,
-        original_domain,
-        deployment_url,
-        created_at,
-        completed_at,
-        website_data,
-        deployment_id,
         status,
-        website_html,
-        website_css,
-        website_js
+        progress,
+        result_data,
+        error_message,
+        created_at,
+        started_at,
+        completed_at
       `);
       
     if (id) {
@@ -151,48 +180,53 @@ async function handleSingleProject(req, res, id, domain) {
       query = query.eq('domain', domain);
     }
     
-    const { data: projects, error } = await query.single();
+    const { data: job, error } = await query.single();
     
     if (error) {
-      console.error('❌ Single project query error:', error);
+      console.error('❌ Single job query error:', error);
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    if (!projects) {
+    if (!job) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    // Transform project data for frontend
-    const strategy = projects.website_data?.strategy;
-    const analysisData = projects.website_data?.domainAnalysis;
+    // Get associated site data
+    const { data: site } = await supabase
+      .from('sites')
+      .select('*')
+      .eq('domain', job.domain)
+      .single();
+    
+    const resultData = job.result_data || {};
+    const strategy = resultData.strategy;
+    const analysis = resultData.domainAnalysis;
     
     const transformedProject = {
-      id: projects.id,
-      domain: projects.domain,
-      original_domain: projects.original_domain,
-      deployment_url: projects.deployment_url,
-      created_at: projects.created_at,
-      completed_at: projects.completed_at,
-      deployed_at: projects.completed_at, // For compatibility
-      deployment_id: projects.deployment_id,
-      status: projects.status,
-      business_data: projects.website_data, // Full data for project details
-      businessType: strategy?.businessModel?.type || 'Unknown',
-      brandPositioning: strategy?.brandStrategy?.positioning || 'Business Solution',
-      description: strategy?.businessModel?.description || `Business website for ${projects.domain}`,
-      score: analysisData?.score || Math.floor(Math.random() * 40) + 60,
-      features: strategy?.mvpScope?.features || ['Landing Page', 'Contact Form'],
-      tags: [
-        strategy?.businessModel?.type || 'Business',
-        strategy?.brandStrategy?.brandPersonality || 'Professional'
-      ].filter(Boolean)
+      id: job.id,
+      domain: job.domain,
+      status: job.status,
+      progress: job.progress || 0,
+      deployment_url: site?.deployed_url || resultData.website?.deployed_url,
+      created_at: job.created_at,
+      started_at: job.started_at,
+      completed_at: job.completed_at,
+      title: site?.title || strategy?.brandStrategy?.name || job.domain,
+      business_data: resultData,
+      businessType: strategy?.businessModel?.type || 'Business',
+      brandPositioning: strategy?.brandStrategy?.positioning || 'Professional Service',
+      description: strategy?.businessModel?.description || `AI-generated website for ${job.domain}`,
+      score: analysis?.score || 85,
+      features: strategy?.mvpScope?.features || ['Landing Page', 'Modern Design'],
+      tags: [job.status, strategy?.businessModel?.type || 'Business'].filter(Boolean),
+      errorMessage: job.error_message
     };
     
-    console.log(`✅ Found project: ${transformedProject.domain}`);
+    console.log(`✅ Found job: ${transformedProject.domain} (${transformedProject.status})`);
     
     return res.status(200).json({
       success: true,
-      projects: [transformedProject], // Return as array for compatibility
+      projects: [transformedProject],
       timestamp: new Date().toISOString()
     });
     
@@ -213,10 +247,11 @@ async function handleDeleteProject(req, res) {
       return res.status(400).json({ error: 'Project ID is required' });
     }
     
-    console.log(`🗑️ Deleting project: ${id}`);
+    console.log(`🗑️ Deleting job: ${id}`);
     
+    // Delete from site_jobs table
     const { error } = await supabase
-      .from('generated_websites')
+      .from('site_jobs')
       .delete()
       .eq('id', id);
       
@@ -228,7 +263,7 @@ async function handleDeleteProject(req, res) {
       });
     }
     
-    console.log(`✅ Project deleted: ${id}`);
+    console.log(`✅ Job deleted: ${id}`);
     
     return res.status(200).json({
       success: true,
