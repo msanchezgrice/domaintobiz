@@ -8,15 +8,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Create a Nunjucks environment with a file system loader
-// This allows the {% include %} tags to work correctly
-const templatesPath = path.join(process.cwd(), 'templates');
-const nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(templatesPath), {
-  autoescape: true,
-});
+// --- START: Definitive Template Inlining ---
+// Read all templates into memory at build time to bypass Vercel filesystem issues.
+const templatesPath = path.join(process.cwd(), 'templates', 'htmx');
+const mainTemplateString = fs.readFileSync(path.join(templatesPath, 'index.html.jinja'), 'utf-8');
+const navbarString = fs.readFileSync(path.join(templatesPath, 'partials', 'navbar.html.jinja'), 'utf-8');
+const footerString = fs.readFileSync(path.join(templatesPath, 'partials', 'footer.html.jinja'), 'utf-8');
 
-// Read the main template file at build time and store it as a string
-const templateString = fs.readFileSync(path.join(templatesPath, 'htmx', 'index.html.jinja'), 'utf-8');
+// Manually replace the {% include %} tags with the actual partial content.
+const finalTemplateString = mainTemplateString
+  .replace("{% include 'partials/navbar.html.jinja' %}", navbarString)
+  .replace("{% include 'partials/footer.html.jinja' %}", footerString);
+
+// --- END: Definitive Template Inlining ---
 
 export default async function handler(req, res) {
   // Standard headers and method checks
@@ -39,9 +43,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required data: domain, strategy, designSystem, and websiteContent are required.' });
     }
 
-    console.log(`[${domain}] Generating website using HTMX templates...`);
+    console.log(`[${domain}] Generating website using inlined HTMX templates...`);
 
-    // Prepare data for the template
     const templateData = {
       brand: {
         name: domain,
@@ -49,20 +52,18 @@ export default async function handler(req, res) {
         secondaryColor: designSystem.colorPalette?.secondary || '#10B981',
       },
       content: websiteContent,
-      // Assuming modules are not yet dynamically handled, will set defaults
       modules: {
         waitlist: true,
-        stripePaywall: false, // Default to false unless specified
+        stripePaywall: false,
       }
     };
     
-    // Render the HTMX template from the in-memory string using the configured environment
-    const renderedHtml = nunjucksEnv.renderString(templateString, templateData);
+    // Render the final, inlined template string
+    const renderedHtml = nunjucks.renderString(finalTemplateString, templateData);
     
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
     const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;
 
-    // Save the rendered HTML to the database
     const { data: savedWebsite, error: dbError } = await supabase
       .from('generated_websites')
       .insert({
@@ -70,9 +71,7 @@ export default async function handler(req, res) {
         original_domain: domain,
         website_data: { strategy, designSystem, websiteContent, executionId },
         deployment_url: deploymentUrl,
-        website_html: renderedHtml, // Save the final rendered HTML
-        website_css: '', // CSS is now inline or via CDN
-        website_js: '', // JS is now inline or via CDN
+        website_html: renderedHtml,
         deployment_id: executionId,
         status: 'completed',
         completed_at: new Date().toISOString()
@@ -87,7 +86,6 @@ export default async function handler(req, res) {
 
     console.log(`[${domain}] Website saved to DB with ID: ${savedWebsite.id}`);
 
-    // Create a deployment record for serving
     await supabase.from('website_deployments').insert({
       website_id: savedWebsite.id,
       deployment_url: deploymentUrl,
