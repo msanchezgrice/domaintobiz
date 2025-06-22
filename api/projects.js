@@ -40,7 +40,6 @@ export default async function handler(req, res) {
         id,
         domain,
         status,
-        progress,
         result_data,
         error_message,
         created_at,
@@ -92,7 +91,7 @@ export default async function handler(req, res) {
         id: job.id,
         domain: job.domain,
         status: job.status,
-        progress: job.progress || 0,
+        progress: 0, // TODO: Calculate from site_job_progress table
         deploymentUrl: site?.deployed_url || resultData.website?.deployed_url,
         createdAt: job.created_at,
         startedAt: job.started_at,
@@ -166,7 +165,6 @@ async function handleSingleProject(req, res, id, domain) {
         id,
         domain,
         status,
-        progress,
         result_data,
         error_message,
         created_at,
@@ -206,7 +204,7 @@ async function handleSingleProject(req, res, id, domain) {
       id: job.id,
       domain: job.domain,
       status: job.status,
-      progress: job.progress || 0,
+      progress: 0, // TODO: Calculate from site_job_progress table
       deployment_url: site?.deployed_url || resultData.website?.deployed_url,
       created_at: job.created_at,
       started_at: job.started_at,
