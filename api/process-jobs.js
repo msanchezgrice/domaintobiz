@@ -84,7 +84,8 @@ async function processJobSteps(job) {
     console.log(`🔄 Processing ${domain}...`);
 
     // Step 1: Domain Analysis (call existing API)
-    const analysisResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/analyze`, {
+    const baseUrl = 'https://domaintobiz.vercel.app';
+    const analysisResponse = await fetch(`${baseUrl}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domains: [domain] })
@@ -98,7 +99,7 @@ async function processJobSteps(job) {
     const domainAnalysis = analysisData.data?.bestDomain;
 
     // Step 2: Strategy Generation
-    const strategyResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/strategy`, {
+    const strategyResponse = await fetch(`${baseUrl}/api/strategy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -115,7 +116,7 @@ async function processJobSteps(job) {
     const strategyData = await strategyResponse.json();
 
     // Step 3: Design Generation
-    const designResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/agents/design`, {
+    const designResponse = await fetch(`${baseUrl}/api/agents/design`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -132,7 +133,7 @@ async function processJobSteps(job) {
     const designData = await designResponse.json();
 
     // Step 4: Content Generation
-    const contentResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/agents/content`, {
+    const contentResponse = await fetch(`${baseUrl}/api/agents/content`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -150,7 +151,7 @@ async function processJobSteps(job) {
     const contentData = await contentResponse.json();
 
     // Step 5: Website Generation (final step)
-    const websiteResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/generate-website`, {
+    const websiteResponse = await fetch(`${baseUrl}/api/generate-website`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
