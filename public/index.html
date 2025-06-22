@@ -628,6 +628,9 @@
     </style>
 </head>
 <body>
+    <!-- Load queue auto-trigger script -->
+    <script src="/js/queue-auto-trigger.js"></script>
+    
     <!-- Fixed Header -->
     <header class="header">
         <div class="header-content">
@@ -1232,8 +1235,8 @@
                                 text: 'Track Progress',
                                 type: 'dialog-btn-primary',
                                 callback: () => {
-                                    // Switch to projects tab to see the job progress
-                                    switchPage('projects');
+                                    // Close dialog and show job tracking
+                                    showJobProgressDialog(data.jobId, domain);
                                 }
                             },
                             {
@@ -1449,15 +1452,15 @@
             analysisResults.innerHTML = resultsHTML;
         }
 
-                 async function autoProceedToWebsiteGeneration(analysisData) {
-             const analysis = analysisData.analysis || analysisData.data || analysisData;
-             
-             if (!analysis?.bestDomain?.domain) {
-                 console.error('No best domain found in analysis');
-                 return;
-             }
+        async function autoProceedToWebsiteGeneration(analysisData) {
+            const analysis = analysisData.analysis || analysisData.data || analysisData;
+            
+            if (!analysis?.bestDomain?.domain) {
+                console.error('No best domain found in analysis');
+                return;
+            }
 
-             const bestDomain = analysis.bestDomain.domain;
+            const bestDomain = analysis.bestDomain.domain;
             const statusEl = document.getElementById('status');
             const statusText = document.getElementById('statusText');
             
@@ -1513,7 +1516,9 @@
                                 {
                                     text: 'Track Progress',
                                     type: 'dialog-btn-primary',
-                                    callback: () => switchPage('projects')
+                                    callback: () => {
+                                        showJobProgressDialog(data.jobId, bestDomain);
+                                    }
                                 }
                             ]
                         });
@@ -1548,7 +1553,202 @@
             }
         }
 
+        // Job Progress Dialog System
+        async function showJobProgressDialog(jobId, domain) {
+            let progressInterval;
+            
+            // Show initial progress dialog
+            showDialog({
+                type: 'info',
+                title: `Tracking ${domain}`,
+                message: `
+                    <div id="progress-content">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <div class="spinner" style="margin: 0 auto 15px;"></div>
+                            <p id="progress-status">Loading job status...</p>
+                            <div id="progress-bar" style="width: 100%; background: #f0f0f0; border-radius: 10px; height: 8px; margin: 15px 0; display: none;">
+                                <div id="progress-fill" style="width: 0%; background: #5730ec; height: 100%; border-radius: 10px; transition: width 0.3s ease;"></div>
+                            </div>
+                            <p id="progress-details" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+                        </div>
+                        <div id="progress-steps" style="margin-top: 20px; display: none;">
+                            <h4 style="margin-bottom: 10px; font-size: 14px; color: #333;">Progress Steps:</h4>
+                            <div id="steps-list"></div>
+                        </div>
+                    </div>
+                `,
+                actions: [
+                    {
+                        text: 'View in Projects',
+                        type: 'dialog-btn-secondary',
+                        callback: () => {
+                            if (progressInterval) clearInterval(progressInterval);
+                            switchPage('projects');
+                        }
+                    },
+                    {
+                        text: 'Close',
+                        type: 'dialog-btn-primary', 
+                        callback: () => {
+                            if (progressInterval) clearInterval(progressInterval);
+                        }
+                    }
+                ]
+            });
 
+            // Function to update progress
+            async function updateProgress() {
+                try {
+                    const response = await fetch(`/api/job-status?jobId=${jobId}`);
+                    const result = await response.json();
+
+                    if (result.success && result.data) {
+                        const job = result.data;
+                        const statusEl = document.getElementById('progress-status');
+                        const detailsEl = document.getElementById('progress-details');
+                        const progressBar = document.getElementById('progress-bar');
+                        const progressFill = document.getElementById('progress-fill');
+                        const stepsEl = document.getElementById('progress-steps');
+                        const stepsList = document.getElementById('steps-list');
+
+                        if (!statusEl) return; // Dialog was closed
+
+                        // Update status text
+                        const statusMessages = {
+                            'queued': '⏳ Waiting in queue...',
+                            'processing': '🔄 Building your website...',
+                            'completed': '✅ Website completed!',
+                            'failed': '❌ Generation failed'
+                        };
+
+                        statusEl.textContent = statusMessages[job.status] || `Status: ${job.status}`;
+                        
+                        // Update progress bar
+                        if (job.status === 'processing' || job.status === 'completed') {
+                            progressBar.style.display = 'block';
+                            const progress = job.overallProgress || 0;
+                            progressFill.style.width = `${progress}%`;
+                            
+                            if (job.estimatedTimeRemaining && job.estimatedTimeRemaining > 0) {
+                                const minutes = Math.ceil(job.estimatedTimeRemaining / 60);
+                                detailsEl.textContent = `Estimated time remaining: ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+                            } else if (job.status === 'completed') {
+                                detailsEl.textContent = 'Generation completed successfully!';
+                            }
+                        }
+
+                        // Show steps if available
+                        if (job.steps && job.steps.length > 0) {
+                            stepsEl.style.display = 'block';
+                            stepsList.innerHTML = job.steps.map(step => {
+                                const statusIcon = {
+                                    'completed': '✅',
+                                    'running': '🔄',
+                                    'pending': '⏳',
+                                    'failed': '❌'
+                                }[step.status] || '📋';
+                                
+                                return `
+                                    <div style="display: flex; align-items: center; margin-bottom: 8px; padding: 8px; background: ${step.status === 'completed' ? '#f0f9ff' : '#f9f9f9'}; border-radius: 6px;">
+                                        <span style="margin-right: 10px;">${statusIcon}</span>
+                                        <div style="flex: 1;">
+                                            <span style="font-weight: 500; text-transform: capitalize;">${step.name}</span>
+                                            ${step.message ? `<div style="font-size: 12px; color: #666; margin-top: 2px;">${step.message}</div>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+
+                        // Handle completion
+                        if (job.status === 'completed') {
+                            if (progressInterval) {
+                                clearInterval(progressInterval);
+                                progressInterval = null;
+                            }
+
+                            // Update dialog for completion
+                            setTimeout(() => {
+                                if (document.getElementById('progress-status')) {
+                                    showDialog({
+                                        type: 'success',
+                                        title: 'Website Generated!',
+                                        message: `
+                                            <div style="text-align: center;">
+                                                <p style="margin-bottom: 15px;">Your website for <strong>${domain}</strong> has been successfully generated!</p>
+                                                ${job.generatedSite?.deployed_url || job.result?.website?.deploymentUrl ? `
+                                                    <div style="margin: 15px 0;">
+                                                        <a href="${job.generatedSite?.deployed_url || job.result?.website?.deploymentUrl}" 
+                                                           target="_blank" 
+                                                           style="display: inline-block; background: #5730ec; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                                           🚀 View Your Website
+                                                        </a>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `,
+                                        actions: [
+                                            {
+                                                text: 'View Projects',
+                                                type: 'dialog-btn-primary',
+                                                callback: () => switchPage('projects')
+                                            },
+                                            {
+                                                text: 'Close',
+                                                type: 'dialog-btn-secondary',
+                                                callback: () => {}
+                                            }
+                                        ]
+                                    });
+                                }
+                            }, 2000);
+
+                        } else if (job.status === 'failed') {
+                            if (progressInterval) {
+                                clearInterval(progressInterval);
+                                progressInterval = null;
+                            }
+
+                            setTimeout(() => {
+                                if (document.getElementById('progress-status')) {
+                                    showDialog({
+                                        type: 'error',
+                                        title: 'Generation Failed',
+                                        message: `
+                                            <div style="text-align: center;">
+                                                <p>Website generation for <strong>${domain}</strong> failed.</p>
+                                                ${job.errorMessage ? `<p style="color: #666; font-size: 14px; margin-top: 10px;">Error: ${job.errorMessage}</p>` : ''}
+                                            </div>
+                                        `,
+                                        actions: [
+                                            {
+                                                text: 'Try Again',
+                                                type: 'dialog-btn-primary',
+                                                callback: () => generateWebsite(domain, jobId)
+                                            },
+                                            {
+                                                text: 'Close',
+                                                type: 'dialog-btn-secondary',
+                                                callback: () => {}
+                                            }
+                                        ]
+                                    });
+                                }
+                            }, 1000);
+                        }
+
+                    } else {
+                        console.error('Failed to get job status:', result);
+                    }
+                } catch (error) {
+                    console.error('Progress update error:', error);
+                }
+            }
+
+            // Start progress updates
+            updateProgress();
+            progressInterval = setInterval(updateProgress, 3000); // Update every 3 seconds
+        }
 
         // Analyzer form functionality
         document.addEventListener('DOMContentLoaded', function() {
