@@ -21,6 +21,7 @@
     "@supabase/supabase-js": "^2.39.7",
     "cheerio": "^1.0.0-rc.12",
     "micro": "^10.0.1",
+    "nunjucks": "^3.2.4",
     "openai": "^4.24.0",
     "stripe": "^14.15.0",
     "whois": "^2.14.0",
