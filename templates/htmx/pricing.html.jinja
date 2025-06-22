@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - {{ brand.name }}</title>
+    <meta name="description" content="Choose the perfect plan for your business needs with {{ brand.name }}.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --brand-primary: {{ brand.primaryColor | default('#3B82F6') }};
+            --brand-secondary: {{ brand.secondaryColor | default('#10B981') }};
+        }
+        
+        .bg-brand-primary { background-color: var(--brand-primary); }
+        .text-brand-primary { color: var(--brand-primary); }
+        .border-brand-primary { border-color: var(--brand-primary); }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    {% include 'partials/navbar.html.jinja' %}
+    
+    <!-- Header Section -->
+    <section class="bg-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                {{ content.pricing.headline | default('Simple, Transparent Pricing') }}
+            </h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                {{ content.pricing.subheadline | default('Choose the perfect plan for your business. Start free and scale as you grow.') }}
+            </p>
+            
+            <!-- Billing Toggle -->
+            <div class="flex items-center justify-center space-x-4 mb-12">
+                <span class="text-gray-700 font-medium">Monthly</span>
+                <button 
+                    id="billing-toggle"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+                    onclick="toggleBilling()"
+                >
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1" id="toggle-indicator"></span>
+                </button>
+                <span class="text-gray-700 font-medium">
+                    Yearly 
+                    <span class="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full ml-1">
+                        Save 20%
+                    </span>
+                </span>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Pricing Plans -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Free Plan -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                    <div class="text-center">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Free</h3>
+                        <p class="text-gray-600 mb-6">Perfect for getting started</p>
+                        
+                        <div class="mb-8">
+                            <span class="text-4xl font-bold text-gray-900">$0</span>
+                            <span class="text-gray-600">/month</span>
+                        </div>
+                        
+                        <ul class="text-left space-y-4 mb-8">
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Preview ideas and concepts</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Basic templates</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Community support</span>
+                            </li>
+                        </ul>
+                        
+                        <button 
+                            hx-post="/api/auth/signup"
+                            hx-vals='{"plan": "free"}'
+                            hx-target="#signup-response"
+                            hx-swap="outerHTML"
+                            class="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                        >
+                            Get Started Free
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Starter Plan -->
+                <div class="bg-white rounded-2xl shadow-lg border-2 border-brand-primary p-8 relative">
+                    <!-- Popular Badge -->
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span class="bg-brand-primary text-white px-4 py-2 rounded-full text-sm font-semibold">
+                            Most Popular
+                        </span>
+                    </div>
+                    
+                    <div class="text-center">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                        <p class="text-gray-600 mb-6">For small businesses and startups</p>
+                        
+                        <div class="mb-8">
+                            <span class="text-4xl font-bold text-gray-900" id="starter-price">$29</span>
+                            <span class="text-gray-600" id="starter-period">/month</span>
+                            <div class="text-sm text-gray-500 mt-1" id="starter-yearly" style="display: none;">
+                                $278/year (save $70)
+                            </div>
+                        </div>
+                        
+                        <ul class="text-left space-y-4 mb-8">
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Deploy 2 sites per month</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Re-generate and edit sites</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Premium templates</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Email support</span>
+                            </li>
+                        </ul>
+                        
+                        <button 
+                            hx-post="/api/pay"
+                            hx-vals='{"plan": "starter", "billing": "monthly"}'
+                            hx-target="#payment-response"
+                            hx-swap="outerHTML"
+                            class="w-full bg-brand-primary text-white py-3 px-6 rounded-lg font-semibold hover:opacity-90 transition-opacity starter-cta"
+                        >
+                            Start Free Trial
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Pro Plan -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                    <div class="text-center">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
+                        <p class="text-gray-600 mb-6">For growing businesses</p>
+                        
+                        <div class="mb-8">
+                            <span class="text-4xl font-bold text-gray-900" id="pro-price">$99</span>
+                            <span class="text-gray-600" id="pro-period">/month</span>
+                            <div class="text-sm text-gray-500 mt-1" id="pro-yearly" style="display: none;">
+                                $950/year (save $238)
+                            </div>
+                        </div>
+                        
+                        <ul class="text-left space-y-4 mb-8">
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Deploy 10 sites per month</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Export to GitHub</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Custom domains</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Priority support</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Advanced analytics</span>
+                            </li>
+                        </ul>
+                        
+                        <button 
+                            hx-post="/api/pay"
+                            hx-vals='{"plan": "pro", "billing": "monthly"}'
+                            hx-target="#payment-response"
+                            hx-swap="outerHTML"
+                            class="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors pro-cta"
+                        >
+                            Start Free Trial
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Response -->
+            <div id="payment-response" class="mt-8 text-center"></div>
+            <div id="signup-response" class="mt-8 text-center"></div>
+        </div>
+    </section>
+    
+    <!-- FAQ Section -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
+                Frequently Asked Questions
+            </h2>
+            
+            <div class="space-y-6">
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <button 
+                        class="w-full text-left flex justify-between items-center"
+                        onclick="toggleFAQ(this)"
+                    >
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            Can I cancel my subscription at any time?
+                        </h3>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <div class="mt-4 text-gray-600 hidden">
+                        Yes, you can cancel your subscription at any time. There are no long-term contracts or cancellation fees.
+                    </div>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <button 
+                        class="w-full text-left flex justify-between items-center"
+                        onclick="toggleFAQ(this)"
+                    >
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            Do you offer a free trial?
+                        </h3>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <div class="mt-4 text-gray-600 hidden">
+                        Yes, all paid plans come with a 14-day free trial. No credit card required to start.
+                    </div>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <button 
+                        class="w-full text-left flex justify-between items-center"
+                        onclick="toggleFAQ(this)"
+                    >
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            What happens to my sites if I downgrade?
+                        </h3>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                    <div class="mt-4 text-gray-600 hidden">
+                        Your existing sites will remain active, but you'll be limited to the features and quotas of your new plan for future sites.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    {% include 'partials/footer.html.jinja' %}
+    
+    <!-- JavaScript -->
+    <script>
+        let isYearly = false;
+        
+        function toggleBilling() {
+            isYearly = !isYearly;
+            const toggle = document.getElementById('billing-toggle');
+            const indicator = document.getElementById('toggle-indicator');
+            
+            // Update toggle UI
+            if (isYearly) {
+                toggle.classList.add('bg-brand-primary');
+                toggle.classList.remove('bg-gray-200');
+                indicator.classList.add('translate-x-6');
+                indicator.classList.remove('translate-x-1');
+            } else {
+                toggle.classList.remove('bg-brand-primary');
+                toggle.classList.add('bg-gray-200');
+                indicator.classList.remove('translate-x-6');
+                indicator.classList.add('translate-x-1');
+            }
+            
+            // Update pricing
+            updatePricing();
+            
+            // Update CTA buttons
+            document.querySelectorAll('.starter-cta, .pro-cta').forEach(btn => {
+                const vals = JSON.parse(btn.getAttribute('hx-vals') || '{}');
+                vals.billing = isYearly ? 'yearly' : 'monthly';
+                btn.setAttribute('hx-vals', JSON.stringify(vals));
+            });
+        }
+        
+        function updatePricing() {
+            if (isYearly) {
+                // Starter Plan
+                document.getElementById('starter-price').textContent = '$23';
+                document.getElementById('starter-period').textContent = '/month';
+                document.getElementById('starter-yearly').style.display = 'block';
+                
+                // Pro Plan
+                document.getElementById('pro-price').textContent = '$79';
+                document.getElementById('pro-period').textContent = '/month';
+                document.getElementById('pro-yearly').style.display = 'block';
+            } else {
+                // Starter Plan
+                document.getElementById('starter-price').textContent = '$29';
+                document.getElementById('starter-period').textContent = '/month';
+                document.getElementById('starter-yearly').style.display = 'none';
+                
+                // Pro Plan
+                document.getElementById('pro-price').textContent = '$99';
+                document.getElementById('pro-period').textContent = '/month';
+                document.getElementById('pro-yearly').style.display = 'none';
+            }
+        }
+        
+        function toggleFAQ(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('svg');
+            
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+        
+        // Add loading states
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            if (evt.target.matches('button')) {
+                evt.target.classList.add('opacity-50');
+                evt.target.disabled = true;
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.target.matches('button')) {
+                evt.target.classList.remove('opacity-50');
+                evt.target.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html> 

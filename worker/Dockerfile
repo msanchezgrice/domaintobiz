@@ -7,10 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including DNS tools
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    dnsutils \
+    iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -22,17 +24,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . /app/
 
-# Make poller executable
-RUN chmod +x poller.py
+# Make scripts executable
+RUN chmod +x poller.py dns_test.py entrypoint.sh dns_resolver.py supabase_http.py
 
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash worker
 RUN chown -R worker:worker /app
-USER worker
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health', timeout=5)" || exit 1
-
-# Run the poller
-CMD ["python", "poller.py"] 
+# Use entrypoint script (runs as root for DNS config, then switches to worker user)
+ENTRYPOINT ["./entrypoint.sh"] 

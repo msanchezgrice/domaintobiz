@@ -1,119 +1,72 @@
-<nav class="bg-white shadow-sm py-4">
-    <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
-        <!-- Logo -->
-        <div class="flex items-center">
-            <div class="w-8 h-8 rounded-lg mr-3" style="background: linear-gradient(135deg, var(--primary), var(--secondary));">
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <!-- Logo and brand -->
+            <div class="flex items-center">
+                <a href="/" class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-{{ brand.primaryColor | default('#3B82F6') }} rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">{{ brand.name[0] | upper }}</span>
+                    </div>
+                    <span class="font-bold text-xl text-gray-900">{{ brand.name }}</span>
+                </a>
             </div>
-            <span class="text-xl font-bold text-gray-900">{{ site.brand.name }}</span>
-        </div>
-        
-        <!-- Desktop Navigation -->
-        <div class="hidden md:flex items-center space-x-6">
-            <a 
-                hx-get="/api/nav/features" 
-                hx-target="#main-content" 
-                hx-swap="innerHTML"
-                href="#features" 
-                class="text-gray-600 hover:text-primary transition-colors"
-            >
-                Features
-            </a>
-            {% if site.modules.stripePaywall %}
-            <a 
-                hx-get="/api/nav/pricing" 
-                hx-target="#main-content" 
-                hx-swap="innerHTML"
-                href="#pricing" 
-                class="text-gray-600 hover:text-primary transition-colors"
-            >
-                Pricing
-            </a>
-            {% endif %}
-            {% if site.modules.waitlist %}
-            <a 
-                hx-get="/api/nav/waitlist" 
-                hx-target="#main-content" 
-                hx-swap="innerHTML"
-                href="#waitlist" 
-                class="text-gray-600 hover:text-primary transition-colors"
-            >
-                Join Waitlist
-            </a>
-            {% endif %}
+            
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="/" class="text-gray-700 hover:text-{{ brand.primaryColor | default('blue-600') }} px-3 py-2 text-sm font-medium transition-colors">
+                    Home
+                </a>
+                {% if modules.pricing %}
+                <a href="/pricing" class="text-gray-700 hover:text-{{ brand.primaryColor | default('blue-600') }} px-3 py-2 text-sm font-medium transition-colors">
+                    Pricing
+                </a>
+                {% endif %}
+                {% if modules.waitlist %}
+                <a href="/waitlist" class="text-gray-700 hover:text-{{ brand.primaryColor | default('blue-600') }} px-3 py-2 text-sm font-medium transition-colors">
+                    Join Waitlist
+                </a>
+                {% endif %}
+                {% if modules.dashboard %}
+                <a href="/dashboard" class="text-gray-700 hover:text-{{ brand.primaryColor | default('blue-600') }} px-3 py-2 text-sm font-medium transition-colors">
+                    Dashboard
+                </a>
+                {% endif %}
+            </div>
             
             <!-- CTA Button -->
-            <button 
-                hx-post="/api/{{ site.content.hero.cta.primary.link }}"
-                hx-swap="outerHTML"
-                hx-target="#nav-cta-response"
-                class="text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
-                style="background: linear-gradient(135deg, var(--primary), var(--secondary));"
-            >
-                {{ site.content.hero.cta.primary.text }}
-            </button>
-        </div>
-        
-        <!-- Mobile Menu Button -->
-        <div class="md:hidden">
-            <button 
-                hx-post="/api/nav/toggle-mobile"
-                hx-target="#mobile-menu"
-                hx-swap="outerHTML"
-                class="text-gray-600 hover:text-gray-900"
-            >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
-        </div>
-    </div>
-    
-    <!-- Mobile Menu -->
-    <div id="mobile-menu" class="md:hidden hidden">
-        <div class="px-4 pt-4 pb-4 space-y-3">
-            <a 
-                hx-get="/api/nav/features" 
-                hx-target="#main-content" 
-                hx-swap="innerHTML"
-                href="#features" 
-                class="block text-gray-600 hover:text-primary transition-colors"
-            >
-                Features
-            </a>
-            {% if site.modules.stripePaywall %}
-            <a 
-                hx-get="/api/nav/pricing" 
-                hx-target="#main-content" 
-                hx-swap="innerHTML"
-                href="#pricing" 
-                class="block text-gray-600 hover:text-primary transition-colors"
-            >
-                Pricing
-            </a>
-            {% endif %}
-            {% if site.modules.waitlist %}
-            <a 
-                hx-get="/api/nav/waitlist" 
-                hx-target="#main-content" 
-                hx-swap="innerHTML"
-                href="#waitlist" 
-                class="block text-gray-600 hover:text-primary transition-colors"
-            >
-                Join Waitlist
-            </a>
-            {% endif %}
+            <div class="hidden md:flex">
+                {% if modules.stripePaywall %}
+                <button 
+                    hx-post="/api/pay" 
+                    hx-swap="outerHTML"
+                    class="bg-{{ brand.primaryColor | default('blue-600') }} text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-{{ brand.primaryColor | default('blue-700') }} transition-colors"
+                >
+                    Get Started
+                </button>
+                {% else %}
+                <a href="/waitlist" class="bg-{{ brand.primaryColor | default('blue-600') }} text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-{{ brand.primaryColor | default('blue-700') }} transition-colors">
+                    Get Started
+                </a>
+                {% endif %}
+            </div>
             
-            <button 
-                hx-post="/api/{{ site.content.hero.cta.primary.link }}"
-                hx-swap="outerHTML"
-                hx-target="#nav-cta-response"
-                class="w-full text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-colors mt-4"
-                style="background: linear-gradient(135deg, var(--primary), var(--secondary));"
-            >
-                {{ site.content.hero.cta.primary.text }}
-            </button>
+            <!-- Mobile menu button -->
+            <div class="md:hidden">
+                <button 
+                    type="button" 
+                    class="text-gray-700 hover:text-gray-900 focus:outline-none focus:text-gray-900"
+                    hx-get="/partials/mobile-menu" 
+                    hx-target="#mobile-menu" 
+                    hx-swap="outerHTML"
+                >
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
     
-    <div id="nav-cta-response" class="px-4"></div>
+    <!-- Mobile menu (hidden by default) -->
+    <div id="mobile-menu" class="md:hidden"></div>
 </nav> 

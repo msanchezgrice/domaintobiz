@@ -1,0 +1,21 @@
+# DomainToBiz Worker Configuration
+app = 'domaintobiz-worker-misty-sun-2826'
+primary_region = 'atl'
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PYTHONUNBUFFERED = "1"
+
+[processes]
+  worker = "python poller.py"
+
+# This is a background worker, not a web service
+# Remove HTTP service configuration
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  processes = ['worker']

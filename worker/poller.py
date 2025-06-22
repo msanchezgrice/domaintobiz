@@ -39,6 +39,18 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     print("🤖 DomainToBiz Site Generation Worker Starting...")
+    
+    # Run DNS and connectivity tests first
+    try:
+        print("🔍 Running connectivity tests...")
+        from dns_test import main as test_dns
+        if not test_dns():
+            print("❌ Connectivity tests failed - exiting")
+            sys.exit(1)
+    except Exception as e:
+        print(f"❌ Connectivity test error: {e}")
+        sys.exit(1)
+    
     print("📋 Press Ctrl+C to stop")
     
     try:

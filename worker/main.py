@@ -18,11 +18,35 @@ logger = logging.getLogger(__name__)
 
 class SiteGenerationWorker:
     def __init__(self):
-        self.supabase: Client = create_client(
-            os.getenv('SUPABASE_URL'),
-            os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-        )
-        self.openai = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        # Debug environment variables
+        supabase_url = os.getenv('SUPABASE_URL')
+        supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+        openai_key = os.getenv('OPENAI_API_KEY')
+        
+        logger.info(f"🔍 Environment check:")
+        logger.info(f"  SUPABASE_URL: {supabase_url}")
+        logger.info(f"  SUPABASE_SERVICE_ROLE_KEY: {'SET' if supabase_key else 'MISSING'} (length: {len(supabase_key) if supabase_key else 0})")
+        logger.info(f"  OPENAI_API_KEY: {'SET' if openai_key else 'MISSING'} (length: {len(openai_key) if openai_key else 0})")
+        
+        if not supabase_url or not supabase_key:
+            raise ValueError("Missing required environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+        
+        try:
+            logger.info("🔌 Creating Supabase client...")
+            self.supabase: Client = create_client(supabase_url, supabase_key)
+            logger.info("✅ Supabase client created successfully")
+        except Exception as e:
+            logger.warning(f"⚠️ Standard Supabase client failed: {e}")
+            logger.info("🔄 Falling back to HTTP-based client...")
+            try:
+                from supabase_http import create_http_client
+                self.supabase = create_http_client(supabase_url, supabase_key)
+                logger.info("✅ HTTP-based Supabase client created successfully")
+            except Exception as e2:
+                logger.error(f"❌ HTTP client also failed: {e2}")
+                raise
+        
+        self.openai = OpenAI(api_key=openai_key)
         self.worker_id = f"worker_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.is_running = True
         
@@ -46,11 +70,17 @@ class SiteGenerationWorker:
                     
                     try:
                         # Mark job as processing
-                        self.supabase.table('site_jobs').update({
+                        update_query = self.supabase.table('site_jobs').update({
                             'status': 'processing',
                             'worker_id': self.worker_id,
                             'started_at': datetime.now().isoformat()
-                        }).eq('id', job_id).execute()
+                        }).eq('id', job_id)
+                        
+                        # Handle different client types
+                        if hasattr(update_query, 'execute_update'):
+                            update_query.execute_update()  # HTTP client
+                        else:
+                            update_query.execute()  # Standard client
                         
                         # Process the job
                         await self.process_job({
@@ -65,11 +95,16 @@ class SiteGenerationWorker:
                     except Exception as job_error:
                         logger.error(f"❌ Job processing failed: {job_error}")
                         # Update job status to failed
-                        self.supabase.table('site_jobs').update({
+                        update_query = self.supabase.table('site_jobs').update({
                             'status': 'failed',
                             'error_message': str(job_error),
                             'completed_at': datetime.now().isoformat()
-                        }).eq('id', job_id).execute()
+                        }).eq('id', job_id)
+                        
+                        if hasattr(update_query, 'execute_update'):
+                            update_query.execute_update()
+                        else:
+                            update_query.execute()
                     
                 else:
                     # No jobs available, wait before polling again
@@ -134,11 +169,16 @@ class SiteGenerationWorker:
             }
             
             # Update job as completed
-            self.supabase.table('site_jobs').update({
+            update_query = self.supabase.table('site_jobs').update({
                 'status': 'completed',
                 'result_data': result_data,
                 'completed_at': datetime.now().isoformat()
-            }).eq('id', site_job_id).execute()
+            }).eq('id', site_job_id)
+            
+            if hasattr(update_query, 'execute_update'):
+                update_query.execute_update()
+            else:
+                update_query.execute()
             
             # Create site record
             await self.create_site_record(site_job_id, domain, result_data, job_data)
@@ -148,11 +188,16 @@ class SiteGenerationWorker:
         except Exception as e:
             logger.error(f"❌ Job failed for {domain}: {e}")
             # Update job as failed
-            self.supabase.table('site_jobs').update({
+            update_query = self.supabase.table('site_jobs').update({
                 'status': 'failed',
                 'error_message': str(e),
                 'completed_at': datetime.now().isoformat()
-            }).eq('id', site_job_id).execute()
+            }).eq('id', site_job_id)
+            
+            if hasattr(update_query, 'execute_update'):
+                update_query.execute_update()
+            else:
+                update_query.execute()
             await self.update_progress(site_job_id, 'error', 'failed', 0, f'Job failed: {str(e)}')
 
     async def analyze_domain(self, domain: str, job_data: Dict) -> Dict[str, Any]:

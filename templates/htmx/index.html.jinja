@@ -3,240 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site.brand.name }} - {{ site.content.hero.headline }}</title>
-    <meta name="description" content="{{ site.content.hero.subheadline }}">
-    
-    <!-- htmx -->
-    <script src="https://unpkg.com/htmx.org@1.9.9"></script>
+    <title>{{ brand.name }} - {{ content.hero.headline | default('Transform Your Ideas Into Reality') }}</title>
+    <meta name="description" content="{{ content.hero.subheadline | default('Discover the power of modern web solutions designed for your business.') }}">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Custom CSS for brand colors -->
     <style>
         :root {
-            --primary: {{ site.brand.primaryColor }};
-            --secondary: {{ site.design.colorPalette.secondary }};
-            --accent: {{ site.design.colorPalette.accent }};
-            --bg: {{ site.design.colorPalette.background }};
-            --text: {{ site.design.colorPalette.text }};
+            --brand-primary: {{ brand.primaryColor | default('#3B82F6') }};
+            --brand-secondary: {{ brand.secondaryColor | default('#10B981') }};
         }
         
-        body {
-            font-family: '{{ site.design.typography.primary }}', sans-serif;
-            background: linear-gradient(135deg, var(--bg) 0%, #f8fafc 100%);
-        }
+        .bg-brand-primary { background-color: var(--brand-primary); }
+        .text-brand-primary { color: var(--brand-primary); }
+        .border-brand-primary { border-color: var(--brand-primary); }
         
-        .hero-gradient {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        }
-        
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-white">
     <!-- Navigation -->
     {% include 'partials/navbar.html.jinja' %}
     
     <!-- Hero Section -->
-    <section class="hero-gradient text-white py-20">
-        <div class="max-w-6xl mx-auto px-4 text-center">
-            <h1 class="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
-                {{ site.content.hero.headline }}
-            </h1>
-            <p class="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto animate-fade-in">
-                {{ site.content.hero.subheadline }}
-            </p>
-            
-            <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in">
-                <button 
-                    hx-post="/api/{{ site.content.hero.cta.primary.link }}"
-                    hx-swap="outerHTML"
-                    hx-target="#cta-response"
-                    class="bg-white text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-lg"
-                >
-                    {{ site.content.hero.cta.primary.text }}
-                </button>
+    <section class="bg-gradient-to-r from-gray-50 to-white py-20 lg:py-32">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- Hero Content -->
+                <div class="text-center lg:text-left">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                        {{ content.hero.headline | default('Transform Your Ideas Into <span class="text-brand-primary">Reality</span>') | safe }}
+                    </h1>
+                    
+                    <p class="text-xl text-gray-600 mb-8 max-w-2xl">
+                        {{ content.hero.subheadline | default('Discover the power of modern web solutions designed for your business. Get started in minutes, not weeks.') }}
+                    </p>
+                    
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        {% if modules.stripePaywall %}
+                        <button 
+                            hx-post="/api/pay"
+                            hx-swap="outerHTML"
+                            hx-target="#cta-response"
+                            class="bg-brand-primary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 shadow-lg"
+                        >
+                            {{ content.hero.cta.primary.text | default('Get Started Now') }}
+                        </button>
+                        {% else %}
+                        <a href="/waitlist" class="bg-brand-primary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:opacity-90 transition-all transform hover:scale-105 shadow-lg inline-block text-center">
+                            {{ content.hero.cta.primary.text | default('Join Waitlist') }}
+                        </a>
+                        {% endif %}
+                        
+                        <button 
+                            hx-get="/api/demo"
+                            hx-target="#demo-modal"
+                            hx-swap="innerHTML"
+                            class="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:border-brand-primary hover:text-brand-primary transition-colors"
+                        >
+                            {{ content.hero.cta.secondary.text | default('Watch Demo') }}
+                        </button>
+                    </div>
+                    
+                    <div id="cta-response" class="mt-4"></div>
+                </div>
                 
-                <button 
-                    hx-get="/api/{{ site.content.hero.cta.secondary.link }}"
-                    hx-swap="innerHTML"
-                    hx-target="#modal-content"
-                    class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-gray-900 transition-colors text-lg"
-                >
-                    {{ site.content.hero.cta.secondary.text }}
-                </button>
+                <!-- Hero Image/Visual -->
+                <div class="relative">
+                    {% if content.hero.image %}
+                    <img src="{{ content.hero.image }}" alt="Hero Image" class="w-full h-auto rounded-2xl shadow-2xl">
+                    {% else %}
+                    <div class="bg-gradient-to-br from-blue-400 to-purple-600 rounded-2xl shadow-2xl aspect-video flex items-center justify-center">
+                        <div class="text-white text-center p-8">
+                            <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">{{ brand.name }}</h3>
+                            <p class="text-lg opacity-90">Powering Innovation</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            
-            <div id="cta-response" class="mt-6"></div>
         </div>
     </section>
     
     <!-- Features Section -->
-    {% if site.content.sections.features %}
-    <section class="py-20 bg-white">
-        <div class="max-w-6xl mx-auto px-4">
+    <section class="py-20 bg-white" id="features">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold mb-4">{{ site.content.sections.features.title }}</h2>
-                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-                    {{ site.content.sections.features.content }}
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    {{ content.features.headline | default('Why Choose ' + brand.name + '?') }}
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    {{ content.features.subheadline | default('Built with modern technology and designed for scalability, performance, and user experience.') }}
                 </p>
             </div>
             
-            <div class="grid md:grid-cols-3 gap-8">
-                {% for feature in site.content.sections.features.features %}
-                <div class="card-hover bg-gray-50 p-8 rounded-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-primary to-secondary rounded-lg mb-6 flex items-center justify-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for feature in content.features.items | default([]) %}
+                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mb-4">
+                        {% if feature.icon %}
+                        <img src="{{ feature.icon }}" alt="{{ feature.title }}" class="w-6 h-6">
+                        {% else %}
                         <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">{{ feature.title }}</h3>
+                    <p class="text-gray-600">{{ feature.description }}</p>
+                </div>
+                {% else %}
+                <!-- Default features if none provided -->
+                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold mb-4">{{ feature.title }}</h3>
-                    <p class="text-gray-600">{{ feature.description }}</p>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Lightning Fast</h3>
+                    <p class="text-gray-600">Optimized for speed and performance with modern web technologies.</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Secure & Reliable</h3>
+                    <p class="text-gray-600">Built with security best practices and enterprise-grade reliability.</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-8 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Easy to Use</h3>
+                    <p class="text-gray-600">Intuitive interface designed for users of all technical levels.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
     </section>
-    {% endif %}
     
-    <!-- Pricing Section -->
-    {% if site.modules.stripePaywall %}
+    <!-- Newsletter/Waitlist Section -->
+    {% if modules.waitlist %}
     <section class="py-20 bg-gray-50">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <h2 class="text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p class="text-xl text-gray-600 mb-12">Choose the plan that works for you</p>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                {{ content.waitlist.headline | default('Stay Updated') }}
+            </h2>
+            <p class="text-xl text-gray-600 mb-8">
+                {{ content.waitlist.subheadline | default('Be the first to know about new features and updates.') }}
+            </p>
             
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="bg-white p-8 rounded-xl shadow-lg">
-                    <h3 class="text-2xl font-bold mb-4">Starter</h3>
-                    <div class="text-4xl font-bold text-primary mb-6">$29<span class="text-lg text-gray-500">/month</span></div>
-                    <ul class="text-left space-y-3 mb-8">
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                            </svg>
-                            Essential features
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                            </svg>
-                            Email support
-                        </li>
-                    </ul>
-                    <button 
-                        hx-post="/api/pay"
-                        hx-vals='{"plan": "starter"}'
-                        class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
-                    >
-                        Get Started
-                    </button>
-                </div>
-                
-                <div class="bg-white p-8 rounded-xl shadow-lg border-2 border-primary">
-                    <div class="bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold mb-4 inline-block">
-                        Most Popular
-                    </div>
-                    <h3 class="text-2xl font-bold mb-4">Pro</h3>
-                    <div class="text-4xl font-bold text-primary mb-6">$99<span class="text-lg text-gray-500">/month</span></div>
-                    <ul class="text-left space-y-3 mb-8">
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                            </svg>
-                            All features
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                            </svg>
-                            Priority support
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
-                            </svg>
-                            Advanced analytics
-                        </li>
-                    </ul>
-                    <button 
-                        hx-post="/api/pay"
-                        hx-vals='{"plan": "pro"}'
-                        class="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
-                    >
-                        Get Started
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-    {% endif %}
-    
-    <!-- Waitlist Section -->
-    {% if site.modules.waitlist %}
-    <section class="py-20 bg-white">
-        <div class="max-w-2xl mx-auto px-4 text-center">
-            <h2 class="text-4xl font-bold mb-4">Join the Waitlist</h2>
-            <p class="text-xl text-gray-600 mb-8">Be the first to know when we launch</p>
-            
-            <form hx-post="/api/waitlist" hx-swap="outerHTML" hx-target="#waitlist-form" id="waitlist-form">
-                <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <div class="max-w-md mx-auto">
+                <form 
+                    hx-post="/api/waitlist"
+                    hx-target="#waitlist-response"
+                    hx-swap="outerHTML"
+                    class="flex gap-4"
+                >
                     <input 
                         type="email" 
                         name="email" 
                         placeholder="Enter your email"
                         required
-                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
                     >
                     <button 
                         type="submit"
-                        class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+                        class="bg-brand-primary text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
                     >
-                        Join Waitlist
+                        Join
                     </button>
-                </div>
-            </form>
+                </form>
+                <div id="waitlist-response" class="mt-4"></div>
+            </div>
         </div>
     </section>
     {% endif %}
     
+    <!-- Final CTA Section -->
+    <section class="py-20 gradient-bg">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+                {{ content.cta.headline | default('Ready to Get Started?') }}
+            </h2>
+            <p class="text-xl text-white text-opacity-90 mb-8">
+                {{ content.cta.subheadline | default('Join thousands of satisfied customers and transform your business today.') }}
+            </p>
+            
+            {% if modules.stripePaywall %}
+            <button 
+                hx-post="/api/pay"
+                hx-swap="outerHTML"
+                hx-target="#final-cta-response"
+                class="bg-white text-brand-primary px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg"
+            >
+                {{ content.cta.button_text | default('Start Your Journey') }}
+            </button>
+            {% else %}
+            <a href="/waitlist" class="bg-white text-brand-primary px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors shadow-lg inline-block">
+                {{ content.cta.button_text | default('Join Waitlist') }}
+            </a>
+            {% endif %}
+            
+            <div id="final-cta-response" class="mt-4"></div>
+        </div>
+    </section>
+    
+    <!-- Demo Modal Placeholder -->
+    <div id="demo-modal"></div>
+    
     <!-- Footer -->
     {% include 'partials/footer.html.jinja' %}
     
-    <!-- Modal for secondary CTA -->
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-8 max-w-md mx-4">
-            <div id="modal-content">
-                <!-- Modal content will be loaded here -->
-            </div>
-            <button onclick="document.getElementById('modal').classList.add('hidden')" class="mt-4 text-gray-500 hover:text-gray-700">
-                Close
-            </button>
-        </div>
-    </div>
-    
+    <!-- htmx Extensions -->
     <script>
-        // Show modal when content is loaded
-        document.body.addEventListener('htmx:afterSwap', function(evt) {
-            if (evt.target.id === 'modal-content') {
-                document.getElementById('modal').classList.remove('hidden');
-                document.getElementById('modal').classList.add('flex');
+        // Add loading states
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            if (evt.target.matches('button')) {
+                evt.target.classList.add('opacity-50');
+                evt.target.disabled = true;
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.target.matches('button')) {
+                evt.target.classList.remove('opacity-50');
+                evt.target.disabled = false;
             }
         });
     </script>

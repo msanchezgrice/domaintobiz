@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join the Waitlist - {{ brand.name }}</title>
+    <meta name="description" content="Be the first to access {{ brand.name }} when we launch. Join our exclusive waitlist today.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- htmx -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --brand-primary: {{ brand.primaryColor | default('#3B82F6') }};
+            --brand-secondary: {{ brand.secondaryColor | default('#10B981') }};
+        }
+        
+        .bg-brand-primary { background-color: var(--brand-primary); }
+        .text-brand-primary { color: var(--brand-primary); }
+        .border-brand-primary { border-color: var(--brand-primary); }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    {% include 'partials/navbar.html.jinja' %}
+    
+    <!-- Main Waitlist Section -->
+    <section class="min-h-screen flex items-center py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Waitlist Form -->
+                <div class="text-center lg:text-left">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                        {{ content.waitlist.headline | default('Join the <span class="text-brand-primary">Waitlist</span>') | safe }}
+                    </h1>
+                    
+                    <p class="text-xl text-gray-600 mb-8 max-w-2xl">
+                        {{ content.waitlist.subheadline | default('Be the first to experience the future of web development. Get early access, exclusive benefits, and shape the product with your feedback.') }}
+                    </p>
+                    
+                    <!-- Benefits List -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">What you'll get:</h3>
+                        <ul class="space-y-3 text-gray-600">
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Early access before public launch</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Exclusive lifetime discount (50% off)</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Behind-the-scenes updates</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>Direct feedback channel to our team</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Waitlist Form -->
+                    <div class="max-w-md mx-auto lg:mx-0" id="waitlist-form">
+                        <form 
+                            hx-post="/api/waitlist"
+                            hx-target="#waitlist-form"
+                            hx-swap="outerHTML"
+                            class="space-y-4"
+                        >
+                            <div class="space-y-4">
+                                <input 
+                                    type="email" 
+                                    name="email" 
+                                    placeholder="Enter your email address"
+                                    required
+                                    class="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-lg"
+                                >
+                                
+                                <input 
+                                    type="text" 
+                                    name="name" 
+                                    placeholder="Your name (optional)"
+                                    class="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-lg"
+                                >
+                                
+                                <select 
+                                    name="interest" 
+                                    class="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-lg"
+                                >
+                                    <option value="">How did you hear about us?</option>
+                                    <option value="social_media">Social Media</option>
+                                    <option value="friend_referral">Friend/Colleague</option>
+                                    <option value="search_engine">Search Engine</option>
+                                    <option value="blog_article">Blog/Article</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <button 
+                                type="submit"
+                                class="w-full bg-brand-primary text-white py-4 px-6 rounded-lg text-lg font-semibold hover:opacity-90 transition-opacity transform hover:scale-105 shadow-lg"
+                            >
+                                Join the Waitlist
+                            </button>
+                            
+                            <p class="text-sm text-gray-500 text-center">
+                                We respect your privacy. Unsubscribe at any time.
+                            </p>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Visual/Illustration -->
+                <div class="relative">
+                    {% if content.waitlist.image %}
+                    <img src="{{ content.waitlist.image }}" alt="Waitlist Illustration" class="w-full h-auto rounded-2xl shadow-2xl">
+                    {% else %}
+                    <div class="relative">
+                        <!-- Main Illustration -->
+                        <div class="bg-gradient-to-br from-blue-400 to-purple-600 rounded-2xl shadow-2xl aspect-square flex items-center justify-center p-12">
+                            <div class="text-white text-center space-y-6">
+                                <!-- Floating Elements -->
+                                <div class="relative">
+                                    <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto animate-float">
+                                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                                        </svg>
+                                    </div>
+                                    
+                                    <!-- Floating dots -->
+                                    <div class="absolute -top-4 -right-4 w-8 h-8 bg-yellow-400 rounded-full animate-pulse"></div>
+                                    <div class="absolute -bottom-2 -left-6 w-6 h-6 bg-pink-400 rounded-full animate-bounce"></div>
+                                    <div class="absolute top-8 -left-8 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
+                                </div>
+                                
+                                <h3 class="text-3xl font-bold">Coming Soon</h3>
+                                <p class="text-lg opacity-90">Something amazing is being built</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-6 -left-6 w-12 h-12 bg-yellow-400 rounded-full opacity-70"></div>
+                        <div class="absolute -bottom-4 -right-4 w-16 h-16 bg-pink-400 rounded-full opacity-50"></div>
+                        <div class="absolute top-1/2 -right-8 w-8 h-8 bg-green-400 rounded-full opacity-60"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Social Proof Section -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-2xl font-bold text-gray-900 mb-8">
+                Join thousands of others waiting for launch
+            </h2>
+            
+            <!-- Counter -->
+            <div class="flex justify-center items-center space-x-8 mb-8">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-brand-primary" id="waitlist-count">
+                        {{ waitlist_count | default('1,247') }}
+                    </div>
+                    <div class="text-gray-600">People waiting</div>
+                </div>
+                
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-brand-primary">
+                        {{ launch_countdown | default('28') }}
+                    </div>
+                    <div class="text-gray-600">Days to launch</div>
+                </div>
+            </div>
+            
+            <!-- Testimonials/Social Proof -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-brand-primary rounded-full flex items-center justify-center text-white font-bold">
+                            A
+                        </div>
+                        <div class="ml-3">
+                            <div class="font-semibold text-gray-900">Alex Chen</div>
+                            <div class="text-sm text-gray-600">Startup Founder</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 italic">
+                        "This looks like exactly what we've been waiting for. Can't wait to try it!"
+                    </p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-brand-primary rounded-full flex items-center justify-center text-white font-bold">
+                            S
+                        </div>
+                        <div class="ml-3">
+                            <div class="font-semibold text-gray-900">Sarah Johnson</div>
+                            <div class="text-sm text-gray-600">Web Developer</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 italic">
+                        "The demo video convinced me immediately. This will save so much time."
+                    </p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-brand-primary rounded-full flex items-center justify-center text-white font-bold">
+                            M
+                        </div>
+                        <div class="ml-3">
+                            <div class="font-semibold text-gray-900">Mike Rodriguez</div>
+                            <div class="text-sm text-gray-600">Agency Owner</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 italic">
+                        "Finally, a solution that gets it right. Excited to see what you build!"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Newsletter/Updates Section -->
+    <section class="py-16 gradient-bg">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="text-white">
+                <h2 class="text-3xl font-bold mb-4">
+                    Stay in the Loop
+                </h2>
+                <p class="text-xl mb-8 opacity-90">
+                    Get weekly updates on our progress, behind-the-scenes content, and exclusive previews.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                    <div class="flex-1">
+                        <input 
+                            type="email" 
+                            placeholder="Your email"
+                            class="w-full px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                    </div>
+                    <button 
+                        hx-post="/api/newsletter"
+                        hx-include="[name='email']"
+                        hx-target="#newsletter-response"
+                        hx-swap="outerHTML"
+                        class="bg-white text-brand-primary px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                    >
+                        Subscribe
+                    </button>
+                </div>
+                
+                <div id="newsletter-response" class="mt-4"></div>
+                
+                <p class="text-sm opacity-75 mt-4">
+                    No spam, ever. Just valuable updates and insights.
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    {% include 'partials/footer.html.jinja' %}
+    
+    <!-- JavaScript -->
+    <script>
+        // Add loading states
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            if (evt.target.matches('button')) {
+                evt.target.classList.add('opacity-50');
+                evt.target.disabled = true;
+                evt.target.textContent = 'Joining...';
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.target.matches('button')) {
+                evt.target.classList.remove('opacity-50');
+                evt.target.disabled = false;
+            }
+        });
+        
+        // Animate counter on page load
+        function animateCounter() {
+            const counter = document.getElementById('waitlist-count');
+            const target = parseInt(counter.textContent.replace(',', ''));
+            let current = target - 50;
+            
+            const increment = () => {
+                if (current < target) {
+                    current += Math.ceil((target - current) / 10);
+                    counter.textContent = current.toLocaleString();
+                    setTimeout(increment, 100);
+                }
+            };
+            
+            increment();
+        }
+        
+        // Run animation when page loads
+        document.addEventListener('DOMContentLoaded', animateCounter);
+    </script>
+</body>
+</html> 
