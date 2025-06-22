@@ -8,7 +8,9 @@ const supabase = createClient(
 );
 
 // Configure Nunjucks
-nunjucks.configure(path.join(process.cwd(), 'templates'), {
+const templateDir = path.join(process.cwd(), 'templates');
+console.log(`[Nunjucks] Configuring template directory: ${templateDir}`);
+nunjucks.configure(templateDir, {
   autoescape: true,
 });
 
@@ -51,7 +53,17 @@ export default async function handler(req, res) {
     };
     
     // Render the HTMX template
-    const renderedHtml = nunjucks.render('htmx/index.html.jinja', templateData);
+    let renderedHtml;
+    try {
+      console.log(`[${domain}] Rendering template 'htmx/index.html.jinja' with provided data.`);
+      renderedHtml = nunjucks.render('htmx/index.html.jinja', templateData);
+      console.log(`[${domain}] Template rendered successfully.`);
+    } catch (renderError) {
+      console.error(`[${domain}] Nunjucks render error:`, renderError);
+      // Log the full error object for more details
+      console.error(JSON.stringify(renderError, null, 2));
+      throw new Error(`Template rendering failed: ${renderError.message}`);
+    }
     
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
     const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;
