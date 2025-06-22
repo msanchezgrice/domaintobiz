@@ -5,6 +5,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Validate UUID format
+function isValidUUID(uuid) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,7 +30,19 @@ export default async function handler(req, res) {
 
     if (!jobId) {
       return res.status(400).json({ 
-        error: 'Job ID is required' 
+        error: 'Job ID is required',
+        message: 'Please provide a valid job ID in the jobId parameter',
+        example: '/api/job-status?jobId=123e4567-e89b-12d3-a456-426614174000'
+      });
+    }
+
+    // Validate UUID format
+    if (!isValidUUID(jobId)) {
+      return res.status(400).json({
+        error: 'Invalid job ID format',
+        message: 'Job ID must be a valid UUID format',
+        provided: jobId,
+        example: '123e4567-e89b-12d3-a456-426614174000'
       });
     }
 
@@ -38,12 +56,21 @@ export default async function handler(req, res) {
       .single();
 
     if (jobError) {
+      console.error('❌ Job query error:', jobError);
+      
       if (jobError.code === 'PGRST116') {
         return res.status(404).json({
-          error: 'Job not found'
+          error: 'Job not found',
+          message: `No job found with ID: ${jobId}`,
+          suggestion: 'Check that the job ID is correct and the job was created successfully'
         });
       }
-      throw new Error(`Job query error: ${jobError.message}`);
+      
+      return res.status(500).json({
+        error: 'Failed to get job status',
+        message: 'Database query failed',
+        details: jobError.message
+      });
     }
 
     // Get progress steps
@@ -54,7 +81,9 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: true });
 
     if (progressError) {
-      throw new Error(`Progress query error: ${progressError.message}`);
+      console.error('❌ Progress query error:', progressError);
+      // Don't fail the request, just log the error
+      console.log('Continuing without progress data...');
     }
 
     // Get generated site if completed
@@ -73,12 +102,13 @@ export default async function handler(req, res) {
 
     // Calculate overall progress
     const totalSteps = ['analyze', 'strategy', 'design', 'content', 'build', 'deploy'];
-    const completedSteps = progress.filter(p => p.status === 'completed').length;
+    const completedSteps = progress?.filter(p => p.status === 'completed').length || 0;
     const overallProgress = Math.round((completedSteps / totalSteps.length) * 100);
 
     // Get current step
-    const currentStep = progress.find(p => p.status === 'running')?.step_name || 
-                      (job.status === 'queued' ? 'queued' : 'completed');
+    const currentStep = progress?.find(p => p.status === 'running')?.step_name || 
+                      (job.status === 'queued' ? 'queued' : 
+                       job.status === 'processing' ? 'processing' : 'completed');
 
     const response = {
       jobId: job.id,
@@ -93,13 +123,13 @@ export default async function handler(req, res) {
       errorMessage: job.error_message,
       
       // Progress details
-      steps: progress.map(p => ({
+      steps: progress?.map(p => ({
         name: p.step_name,
         status: p.status,
         progress: p.progress_percentage,
         message: p.message,
         completedAt: p.created_at
-      })),
+      })) || [],
 
       // Results (if completed)
       result: job.result_data,
@@ -122,7 +152,8 @@ export default async function handler(req, res) {
     
     return res.status(500).json({ 
       error: 'Failed to get job status', 
-      message: error.message
+      message: error.message,
+      suggestion: 'Please try again or contact support if the issue persists'
     });
   }
 }

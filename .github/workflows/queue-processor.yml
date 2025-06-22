@@ -1,0 +1,38 @@
+name: Queue Processor
+on:
+  schedule:
+    # Run every 2 minutes
+    - cron: '*/2 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  process-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Queue Processing
+        run: |
+          echo "🚀 Triggering queue processor..."
+          
+          # Call the scheduler endpoint
+          response=$(curl -s -w "%{http_code}" -X POST \
+            "https://domaintobiz.vercel.app/api/queue/scheduler" \
+            -H "Content-Type: application/json" \
+            -d '{"trigger":"github_cron"}' \
+            -o /tmp/response.json)
+          
+          http_code="${response: -3}"
+          
+          echo "📊 Response Code: $http_code"
+          
+          if [ -f /tmp/response.json ]; then
+            echo "📋 Response Body:"
+            cat /tmp/response.json
+          fi
+          
+          # Check if request was successful
+          if [ "$http_code" = "200" ]; then
+            echo "✅ Queue processing triggered successfully"
+          else
+            echo "❌ Queue processing failed with code: $http_code"
+            exit 1
+          fi 
