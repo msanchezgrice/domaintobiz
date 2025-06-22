@@ -1323,6 +1323,29 @@ body {
 }`;
 }
 
+function generateJS(domain) {
+  return getDefaultJS();
+}
+
+function generateManifest(domain, strategy) {
+  return JSON.stringify({
+    name: `${domain} - ${strategy.brandStrategy?.positioning || 'Business Solution'}`,
+    short_name: domain,
+    description: strategy.businessModel?.description || `Business website for ${domain}`,
+    start_url: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#3B82F6",
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%233B82F6'/%3E%3Ctext x='50' y='55' font-family='Arial' font-size='40' fill='white' text-anchor='middle'%3E${domain.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E",
+        sizes: "192x192",
+        type: "image/svg+xml"
+      }
+    ]
+  }, null, 2);
+}
+
 function getDefaultJS() {
   return `// Modern Website functionality
 
@@ -1614,21 +1637,7 @@ window.WebsiteUtils = {
 console.log('✨ Modern AI-generated website functionality initialized!');`;
 }
 
-function generateManifest(domain, strategy) {
-  return JSON.stringify({
-    name: `${domain} - ${strategy.brandStrategy?.positioning || 'Business Solution'}`,
-    short_name: domain,
-    description: strategy.businessModel?.description || `Business website for ${domain}`,
-    start_url: "/",
-    display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#3B82F6",
-    icons: [
-      {
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%233B82F6'/%3E%3Ctext x='50' y='55' font-family='Arial' font-size='40' fill='white' text-anchor='middle'%3E${domain.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E",
-        sizes: "192x192",
-        type: "image/svg+xml"
-      }
-    ]
-  }, null, 2);
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+  // ... existing code ...
 }

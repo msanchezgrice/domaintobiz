@@ -63,7 +63,6 @@ export default async function handler(req, res) {
       .select(`
         id,
         domain,
-        title,
         deployed_url,
         thumbnail_url,
         created_at,
@@ -96,7 +95,7 @@ export default async function handler(req, res) {
         createdAt: job.created_at,
         startedAt: job.started_at,
         completedAt: job.completed_at,
-        title: site?.title || strategy?.brandStrategy?.name || job.domain,
+        title: strategy?.brandStrategy?.name || job.domain,
         thumbnailUrl: site?.thumbnail_url,
         paid: site?.paid || false,
         
@@ -209,7 +208,7 @@ async function handleSingleProject(req, res, id, domain) {
       created_at: job.created_at,
       started_at: job.started_at,
       completed_at: job.completed_at,
-      title: site?.title || strategy?.brandStrategy?.name || job.domain,
+      title: strategy?.brandStrategy?.name || job.domain,
       business_data: resultData,
       businessType: strategy?.businessModel?.type || 'Business',
       brandPositioning: strategy?.brandStrategy?.positioning || 'Professional Service',
