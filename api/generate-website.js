@@ -8,16 +8,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Read the template file at build time and store it as a string
-const templatePath = path.join(process.cwd(), 'templates', 'htmx', 'index.html.jinja');
-const templateString = fs.readFileSync(templatePath, 'utf-8');
-
-// Configure Nunjucks
-const templateDir = path.join(process.cwd(), 'templates');
-console.log(`[Nunjucks] Configuring template directory: ${templateDir}`);
-nunjucks.configure(templateDir, {
+// Create a Nunjucks environment with a file system loader
+// This allows the {% include %} tags to work correctly
+const templatesPath = path.join(process.cwd(), 'templates');
+const nunjucksEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(templatesPath), {
   autoescape: true,
 });
+
+// Read the main template file at build time and store it as a string
+const templateString = fs.readFileSync(path.join(templatesPath, 'htmx', 'index.html.jinja'), 'utf-8');
 
 export default async function handler(req, res) {
   // Standard headers and method checks
@@ -57,8 +56,8 @@ export default async function handler(req, res) {
       }
     };
     
-    // Render the HTMX template from the in-memory string
-    const renderedHtml = nunjucks.renderString(templateString, templateData);
+    // Render the HTMX template from the in-memory string using the configured environment
+    const renderedHtml = nunjucksEnv.renderString(templateString, templateData);
     
     const deploymentSlug = `${domain.replace(/\./g, '-')}-${Date.now()}`;
     const deploymentUrl = `${req.headers.origin || 'https://domaintobiz.vercel.app'}/sites/${deploymentSlug}`;
