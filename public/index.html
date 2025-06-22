@@ -844,7 +844,16 @@
 
             // Set content
             title.textContent = options.title || 'Notification';
-            message.textContent = options.message || '';
+            
+            // Ensure HTML content is properly rendered
+            if (message) {
+                message.innerHTML = options.message || '';
+                
+                // Force a reflow to ensure content is rendered
+                message.style.display = 'none';
+                message.offsetHeight; // Trigger reflow
+                message.style.display = 'block';
+            }
 
             // Set actions
             actions.innerHTML = '';

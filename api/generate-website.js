@@ -188,424 +188,398 @@ export default async function handler(req, res) {
 }
 
 function generateHTML(domain, strategy, designSystem, websiteContent) {
-  const metadata = websiteContent?.metadata || {
-    title: `${strategy.brandStrategy?.businessName || domain} - ${strategy.brandStrategy?.positioning || 'Your Business Solution'}`,
-    description: strategy.brandStrategy?.uniqueSellingProposition || `Welcome to ${domain}`,
-    keywords: strategy.mvpScope?.keywords || ['business', 'innovation', 'solutions']
-  };
-
-  const sections = websiteContent?.sections || {};
-  const hero = sections.hero || websiteContent?.hero || {
-    headline: strategy.businessModel?.businessConcept || strategy.businessModel?.domainMeaning || domain,
-    subheadline: strategy.businessModel?.valueProposition || strategy.brandStrategy?.positioning || 'Professional solutions',
-    cta: { primary: { text: 'Get Started', link: '#' }, secondary: { text: 'Learn More', link: '#features' } }
+  // Use the same modern template system as serve-site.js
+  const website = {
+    domain: domain,
+    website_data: {
+      strategy: strategy,
+      designSystem: designSystem,
+      websiteContent: websiteContent
+    }
   };
   
-  // Use the actual hero content structure
-  const heroTitle = hero.headline || hero.title || strategy.businessModel?.businessConcept || domain;
-  const heroSubtitle = hero.subheadline || hero.subtitle || strategy.businessModel?.valueProposition || 'Professional business solutions';
+  return getDefaultHTML(website);
+}
 
-  const features = sections.features?.items || 
-    websiteContent?.sections?.find(s => s.id === 'features')?.features ||
-    (strategy.mvpScope?.coreFeatures || strategy.mvpPlan?.coreFeatures || strategy.mvpScope?.features)?.map(f => ({
-      title: typeof f === 'object' ? f.name || f.title : f,
-      description: typeof f === 'object' ? f.description : `${f} - designed for ${strategy.businessModel?.targetMarket || 'your business'}`
-    })) || [];
-
-  // Only use actual pricing and testimonials from content - no generic placeholders
-  const pricing = sections.pricing?.items || [];
-  const testimonials = sections.testimonials?.items || [];
-
+function getDefaultHTML(website) {
+  const domain = website?.domain || 'Business Website';
+  const businessType = website?.website_data?.strategy?.businessModel?.type || 'Business';
+  const css = getDefaultCSS();
+  const js = getDefaultJS();
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${metadata.title}</title>
-    <meta name="description" content="${metadata.description}">
-    
-    <!-- OpenGraph -->
-    <meta property="og:title" content="${metadata.openGraph?.title || metadata.title}">
-    <meta property="og:description" content="${metadata.openGraph?.description || metadata.description}">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://${domain}">
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${metadata.twitter?.title || metadata.title}">
-    <meta name="twitter:description" content="${metadata.twitter?.description || metadata.description}">
-    
-    <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Fonts -->
+    <meta name="description" content="${website.website_data?.websiteContent?.hero?.subheadline || website.website_data?.strategy?.businessModel?.valueProposition || `Professional ${businessType.toLowerCase()} solutions and services from ${domain}`}">
+    <title>${website.website_data?.websiteContent?.hero?.headline || domain} - ${website.website_data?.strategy?.brandStrategy?.positioning?.substring(0, 60) || businessType}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%236366F1'/%3E%3Ctext x='50' y='55' font-family='Arial' font-size='40' fill='white' text-anchor='middle'%3E${domain.charAt(0).toUpperCase()}%3C/text%3E%3C/svg%3E">
+    
+    <style>
+${css}
+    </style>
 </head>
 <body>
-    
-    <nav class="navbar">
-        <div class="container">
-            <div class="nav-wrapper">
-                <a href="/" class="nav-logo">${strategy.brandStrategy?.businessName || domain}</a>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <div class="logo-icon">${domain.charAt(0).toUpperCase()}</div>
+                    <span class="logo-text">${domain}</span>
+                </div>
                 <ul class="nav-menu">
-                    <li><a href="#features">Features</a></li>
-                    <li><a href="#pricing">Pricing</a></li>
-                    <li><a href="#testimonials">Reviews</a></li>
-                    <li><a href="#" class="btn btn-primary nav-cta">Get Started</a></li>
+                    <li class="nav-item"><a href="#home" class="nav-link">Home</a></li>
+                    <li class="nav-item"><a href="#services" class="nav-link">Services</a></li>
+                    <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
+                    <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
                 </ul>
-                <button class="nav-toggle" aria-label="Toggle menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                <button class="nav-toggle" aria-label="Toggle navigation">
+                    <span class="hamburger"></span>
                 </button>
             </div>
-        </div>
-    </nav>
-    
+        </nav>
+    </header>
+
     <main>
-        
-    <section class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <h1 class="hero-headline">${heroTitle}</h1>
-                <p class="hero-subheadline">${heroSubtitle}</p>
-                <div class="hero-cta">
-                    <button class="btn btn-primary btn-lg" data-modal="signup">${hero.cta?.primary?.text || 'Get Started'}</button>
-                    <a href="#features" class="btn btn-secondary btn-lg">${hero.cta?.secondary?.text || 'Learn More'}</a>
+        <section id="home" class="hero">
+            <div class="hero-background">
+                <div class="hero-shapes">
+                    <div class="shape shape-1"></div>
+                    <div class="shape shape-2"></div>
+                    <div class="shape shape-3"></div>
                 </div>
             </div>
-            <div class="hero-visual">
-                <img src="https://via.placeholder.com/600x400" alt="Product showcase">
-            </div>
-        </div>
-    </section>
-        
-    <section id="features" class="features">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">${sections.features?.title || `${strategy.businessModel?.industry || 'Our'} Features`}</h2>
-                <p class="section-subtitle">${sections.features?.subtitle || `Discover what makes ${strategy.businessModel?.businessConcept || 'our solution'} different`}</p>
-            </div>
-            <div class="features-grid">
-                ${features.map(feature => `
-        <div class="feature-card">
-            <div class="feature-icon">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 11l3 3L22 4"></path>
-                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
-                </svg>
-            </div>
-            <h3 class="feature-title">${feature.title}</h3>
-            <p class="feature-description">${feature.description}</p>
-        </div>
-    `).join('')}
-            </div>
-        </div>
-    </section>
-        
-    ${pricing.length > 0 ? `
-    <section id="pricing" class="pricing">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Pricing</h2>
-                <p class="section-subtitle">Choose the plan that fits your needs</p>
-            </div>
-            <div class="pricing-grid">
-                ${pricing.map(plan => `
-        <div class="pricing-card ${plan.featured ? 'featured' : ''}">
-            ${plan.featured ? '<div class="pricing-badge">Most Popular</div>' : ''}
-            <h3 class="pricing-title">${plan.title}</h3>
-            <div class="pricing-price">
-                <span class="currency">$</span>
-                <span class="amount">${plan.price.replace('$', '')}</span>
-                <span class="period">${plan.period}</span>
-            </div>
-            <p class="pricing-description">${plan.description}</p>
-            <ul class="pricing-features">
-                ${plan.features.map(f => `<li>${f}</li>`).join('')}
-            </ul>
-            <button class="btn ${plan.featured ? 'btn-primary' : 'btn-secondary'} btn-block" data-modal="signup" data-plan="${plan.title}">
-                ${plan.featured ? 'Get Started' : 'Start Free Trial'}
-            </button>
-        </div>
-    `).join('')}
-            </div>
-        </div>
-    </section>
-    ` : ''}
-        
-    ${testimonials.length > 0 ? `
-    <section id="testimonials" class="testimonials">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">What Our Customers Say</h2>
-                <p class="section-subtitle">See what our satisfied clients have to say about us</p>
-            </div>
-            <div class="testimonials-grid">
-                ${testimonials.map(testimonial => `
-        <div class="testimonial-card">
-            <div class="testimonial-content">
-                <p class="testimonial-text">"${testimonial.text}"</p>
-            </div>
-            <div class="testimonial-author">
-                <img src="https://via.placeholder.com/48x48" alt="${testimonial.author}" class="testimonial-avatar">
-                <div>
-                    <p class="testimonial-name">${testimonial.author}</p>
-                    <p class="testimonial-role">${testimonial.role}</p>
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <span class="badge-icon">✨</span>
+                        <span class="badge-text">Premium ${website.website_data?.strategy?.businessModel?.type || businessType} Solutions</span>
+                    </div>
+                    <h1 class="hero-title">${website.website_data?.strategy?.businessModel?.businessConcept || website.content?.hero?.headline || `Professional ${businessType} Solutions`}</h1>
+                    <p class="hero-subtitle">${website.website_data?.strategy?.businessModel?.valueProposition || website.content?.hero?.subheadline || 'Discover professional solutions that drive growth, enhance efficiency, and deliver exceptional results for your business.'}</p>
+                    <div class="hero-cta">
+                        <a href="#contact" class="btn btn-primary">
+                            ${website.website_data?.websiteContent?.hero?.cta?.primary?.text || 'Get Started Today'}
+                            <span class="btn-icon">→</span>
+                        </a>
+                        <a href="#services" class="btn btn-secondary">
+                            ${website.website_data?.websiteContent?.hero?.cta?.secondary?.text || 'Learn More'}
+                        </a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">500+</div>
+                            <div class="stat-label">Happy Clients</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">99%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">24/7</div>
+                            <div class="stat-label">Support</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('')}
+        </section>
+
+        <section id="services" class="services">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'features')?.title || 'Our Services'}</h2>
+                    <p class="section-subtitle">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'features')?.content || 'Comprehensive solutions tailored to your business needs'}</p>
+                </div>
+                <div class="services-grid">
+                    ${(website.website_data?.websiteContent?.sections?.find(s => s.id === 'features')?.features || website.website_data?.strategy?.mvpScope?.coreFeatures || [
+                        { name: 'Quality Service', description: 'Professional solutions designed to meet your unique business requirements with precision and excellence.' },
+                        { name: 'Expert Team', description: 'Experienced professionals with deep industry knowledge ready to tackle your most challenging projects.' },
+                        { name: 'Fast Delivery', description: 'Quick turnaround times without compromising on quality, ensuring your business stays ahead of the competition.' }
+                    ]).slice(0, 6).map(feature => `
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <div class="icon-bg">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="service-title">${feature.title || feature.name || 'Service'}</h3>
+                        <p class="service-description">${feature.description || 'Professional service designed for your needs.'}</p>
+                    </div>
+                    `).join('')}
+                </div>
             </div>
-        </div>
-    </section>
-    ` : ''}
-        
-    <section class="cta-section">
-        <div class="container">
-            <div class="cta-content">
-                <h2 class="cta-title">${sections.cta?.title || `Ready to get started with ${strategy.businessModel?.businessConcept || domain}?`}</h2>
-                <p class="cta-subtitle">${sections.cta?.subtitle || `${strategy.businessModel?.valueProposition || `Join ${domain} today`}`}</p>
-                <button class="btn btn-primary btn-lg" data-modal="signup">Start Your Free Trial</button>
+        </section>
+
+        <section id="about" class="about">
+            <div class="container">
+                <div class="about-content">
+                    <div class="about-text">
+                        <div class="section-header">
+                            <h2 class="section-title">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'about')?.title || `About ${domain}`}</h2>
+                            <p class="section-subtitle">${website.website_data?.strategy?.brandStrategy?.positioning || `We're passionate about delivering excellence in ${businessType.toLowerCase()} solutions`}</p>
+                        </div>
+                        <div class="about-description">
+                            <p>${website.website_data?.websiteContent?.sections?.find(s => s.id === 'about')?.content || website.website_data?.strategy?.businessModel?.businessConcept || 'With years of experience and a commitment to innovation, we help businesses transform their operations and achieve unprecedented growth. Our team combines deep industry knowledge with cutting-edge technology.'}</p>
+                            <p>${website.website_data?.strategy?.businessModel?.competitiveAdvantage || 'From startups to enterprise organizations, we\'ve helped hundreds of clients succeed in today\'s competitive marketplace.'}</p>
+                        </div>
+                        <div class="about-highlights">
+                            <div class="highlight-item">
+                                <div class="highlight-icon">🚀</div>
+                                <div class="highlight-text">
+                                    <h4>${website.website_data?.strategy?.brandStrategy?.values?.[2] || 'Innovation'} First</h4>
+                                    <p>${website.website_data?.strategy?.brandStrategy?.differentiation || 'Cutting-edge solutions for modern challenges'}</p>
+                                </div>
+                            </div>
+                            <div class="highlight-item">
+                                <div class="highlight-icon">🎯</div>
+                                <div class="highlight-text">
+                                    <h4>Results Driven</h4>
+                                    <p>${website.website_data?.strategy?.businessModel?.problemSolved || 'Measurable outcomes that impact your bottom line'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="about-visual">
+                        <div class="visual-placeholder">
+                            <div class="visual-icon">📊</div>
+                            <p>Professional ${website.website_data?.strategy?.businessModel?.type || businessType} Excellence</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <section id="contact" class="contact">
+            <div class="container">
+                <div class="contact-content">
+                    <div class="contact-info">
+                        <h2 class="contact-title">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'contact')?.title || 'Ready to Get Started?'}</h2>
+                        <p class="contact-subtitle">${website.website_data?.websiteContent?.sections?.find(s => s.id === 'contact')?.content || `Join hundreds of satisfied clients who have transformed their business with ${domain}`}</p>
+                        <div class="contact-benefits">
+                            ${(website.website_data?.strategy?.mvpScope?.coreFeatures?.slice(0, 3) || [
+                                { name: 'Free consultation' },
+                                { name: 'No long-term commitment' },
+                                { name: 'Expert support team' }
+                            ]).map(benefit => `
+                            <div class="benefit-item">
+                                <div class="benefit-icon">✓</div>
+                                <span>${benefit.name || benefit.title || benefit}</span>
+                            </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="contact-form-container">
+                        <form class="contact-form">
+                            <div class="form-group">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" id="email" class="form-input" placeholder="Enter your email address" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="name" class="form-label">Full Name</label>
+                                <input type="text" id="name" class="form-input" placeholder="Enter your full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="message" class="form-label">Message (Optional)</label>
+                                <textarea id="message" class="form-input form-textarea" placeholder="Tell us about your project..." rows="4"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-fullwidth">
+                                <span class="btn-text">Start Your Journey</span>
+                                <span class="btn-icon">→</span>
+                            </button>
+                            <p class="form-disclaimer">By submitting, you agree to our terms of service and privacy policy.</p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
-    
-    
+
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <div class="footer-section">
-                    <h4 class="footer-title">Product</h4>
-                    <ul class="footer-links">
-                        <li><a href="#features">Features</a></li>
-                        <li><a href="#pricing">Pricing</a></li>
-                        <li><a href="#testimonials">Reviews</a></li>
-                    </ul>
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="logo-icon">${domain.charAt(0).toUpperCase()}</div>
+                        <span class="logo-text">${domain}</span>
+                    </div>
+                    <p class="footer-description">${website.website_data?.websiteContent?.footer?.tagline || website.website_data?.strategy?.brandStrategy?.brandPromise || `Transforming businesses through innovative ${businessType.toLowerCase()} solutions.`}</p>
                 </div>
-                <div class="footer-section">
-                    <h4 class="footer-title">Company</h4>
-                    <ul class="footer-links">
-                        <li><a href="/about">About</a></li>
-                        <li><a href="/blog">Blog</a></li>
-                        <li><a href="/contact">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4 class="footer-title">Legal</h4>
-                    <ul class="footer-links">
-                        <li><a href="/privacy">Privacy Policy</a></li>
-                        <li><a href="/terms">Terms of Service</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4 class="footer-title">Newsletter</h4>
-                    <p class="footer-text">Stay updated with our latest news</p>
-                    <form class="newsletter-form">
-                        <input type="email" placeholder="Your email" required>
-                        <button type="submit" class="btn btn-primary">Subscribe</button>
-                    </form>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 class="footer-title">Company</h4>
+                        <ul class="footer-list">
+                            <li><a href="#about" class="footer-link">About Us</a></li>
+                            <li><a href="#services" class="footer-link">Services</a></li>
+                            <li><a href="#contact" class="footer-link">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h4 class="footer-title">Services</h4>
+                        <ul class="footer-list">
+                            <li><a href="#" class="footer-link">Consulting</a></li>
+                            <li><a href="#" class="footer-link">Support</a></li>
+                            <li><a href="#" class="footer-link">Training</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 ${domain}. All rights reserved</p>
+                <p class="footer-copyright">&copy; 2025 ${domain}. All rights reserved.</p>
+                <p class="footer-credits">Powered by <a href="https://domaintobiz.vercel.app" class="footer-link">DomainToBiz</a></p>
             </div>
         </div>
     </footer>
-    
-    
-    <div class="modal" id="signup-modal">
-        <div class="modal-backdrop"></div>
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-            <h2 class="modal-title">Start Your Free Trial</h2>
-            <p class="modal-subtitle">No credit card required</p>
-            <form class="signup-form" id="signup-form">
-                ${sections.contactForm?.fields?.map(field => `
-                    <div class="form-group">
-                        <input type="${field.type}" name="${field.name}" placeholder="${field.placeholder}" ${field.required ? 'required' : ''}>
-                    </div>
-                `).join('') || `
-                    <div class="form-group">
-                        <input type="email" name="email" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" name="name" placeholder="Your name" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" name="company" placeholder="Company (optional)" >
-                    </div>
-                `}
-                <button type="submit" class="btn btn-primary btn-block">Get Started</button>
-                <p class="form-privacy">We respect your privacy. Unsubscribe at any time.</p>
-            </form>
-        </div>
-    </div>
-    
-    <script src="script.js"></script>
+
+    <script>
+${js}
+    </script>
 </body>
 </html>`;
 }
 
 function generateCSS(designSystem) {
-  const colors = designSystem?.colors || designSystem?.colorPalette || {
-    primary: '#6366f1',
-    primaryDark: '#4f46e5',
-    secondary: '#8b5cf6',
-    accent: '#ec4899',
-    background: '#ffffff',
-    text: '#1f2937',
-    textSecondary: '#6b7280',
-    success: '#10b981',
-    error: '#ef4444',
-    warning: '#f59e0b'
-  };
-
-  const typography = designSystem?.typography || {
-    primary: { family: 'Inter, system-ui, sans-serif' },
-    sizes: {
-      base: '16px',
-      h1: '3rem',
-      h2: '2.25rem',
-      h3: '1.5rem'
-    }
-  };
-  
-  const spacing = designSystem?.spacing || {
-    xs: '0.5rem',
-    sm: '1rem',
-    md: '1.5rem',
-    lg: '2rem',
-    xl: '4rem'
-  };
-
-  return `
-
-:root {
-    --color-primary: ${colors.primary};
-    --color-primary-rgb: ${hexToRgb(colors.primary)};
-    --color-secondary: ${colors.secondary};
-    --color-accent: ${colors.accent};
-    --color-background: ${colors.background};
-    --color-text: ${colors.text};
-    --color-text-secondary: ${colors.textSecondary};
-    
-    --font-primary: ${typography.primary?.family || 'Inter, system-ui, sans-serif'};
-    --font-secondary: ${typography.secondary?.family || typography.primary?.family || 'Inter, system-ui, sans-serif'};
-    --font-size-base: ${typography.sizes?.base || '16px'};
-    --font-size-h1: ${typography.sizes?.h1 || '3rem'};
-    --font-size-h2: ${typography.sizes?.h2 || '2.25rem'};
-    --font-size-h3: ${typography.sizes?.h3 || '1.5rem'};
-    
-    --space-xs: ${spacing.xs || '0.5rem'};
-    --space-sm: ${spacing.sm || '1rem'};
-    --space-md: ${spacing.md || '1.5rem'};
-    --space-lg: ${spacing.lg || '2rem'};
-    --space-xl: ${spacing.xl || '4rem'};
-    
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-    
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 16px;
+  return getDefaultCSS();
 }
 
-* {
-    box-sizing: border-box;
+function getDefaultCSS() {
+  return `/* Modern CSS Reset */
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
+}
+
+/* Root Variables */
+:root {
+    --primary: #6366F1;
+    --secondary: #8B5CF6;
+    --accent: #F59E0B;
+    --background: #FFFFFF;
+    --text: #1F2937;
+    --light-gray: #F8FAFC;
+    --medium-gray: #6B7280;
+    --dark-gray: #374151;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --border-radius: 12px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+}
+
+/* Base Styles */
+html {
+    scroll-behavior: smooth;
 }
 
 body {
-    font-family: var(--font-primary);
-    font-size: var(--font-size-base);
-    color: var(--color-text);
-    background-color: var(--color-background);
-    line-height: 1.6;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.7;
+    color: var(--text);
+    background-color: var(--background);
+    font-size: 16px;
+    overflow-x: hidden;
 }
 
+/* Container */
 .container {
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0 var(--space-md);
+    padding: 0 2rem;
 }
 
-.btn {
-    display: inline-block;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: none;
-}
-
-.btn-primary {
-    background-color: var(--color-primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: ${colors.primaryDark || '#5558e3'};
-}
-
-.btn-secondary {
-    background-color: transparent;
-    color: var(--color-primary);
-    border: 2px solid var(--color-primary);
-}
-
-.btn-secondary:hover {
-    background-color: var(--color-primary);
-    color: white;
-}
-    
-
-/* Navigation */
-.navbar {
-    background-color: var(--color-background);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    position: sticky;
+/* Header & Navigation */
+.header {
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
 }
 
-.nav-wrapper {
+.navbar {
+    padding: 1rem 0;
+}
+
+.nav-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-md) 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
 }
 
-.nav-logo {
-    font-size: 1.5rem;
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     font-weight: 700;
-    color: var(--color-primary);
+    font-size: 1.5rem;
+    color: var(--text);
     text-decoration: none;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
 }
 
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: var(--space-lg);
+    gap: 2.5rem;
     align-items: center;
 }
 
-.nav-menu a {
-    color: var(--color-text);
+.nav-link {
+    color: var(--text);
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.3s;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    position: relative;
 }
 
-.nav-menu a:hover {
-    color: var(--color-primary);
+.nav-link:hover {
+    color: var(--primary);
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
 }
 
 .nav-toggle {
@@ -614,405 +588,650 @@ body {
     background: none;
     border: none;
     cursor: pointer;
+    padding: 0.5rem;
 }
 
-.nav-toggle span {
+.hamburger {
     width: 25px;
     height: 3px;
-    background-color: var(--color-text);
+    background: var(--text);
     margin: 3px 0;
-    transition: 0.3s;
+    transition: var(--transition);
 }
 
 /* Hero Section */
 .hero {
-    padding: var(--space-xl) 0;
-    background: linear-gradient(135deg, var(--color-background) 0%, rgba(var(--color-primary-rgb), 0.05) 100%);
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    overflow: hidden;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.hero-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+    width: 300px;
+    height: 300px;
+    top: 10%;
+    right: 10%;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 20%;
+    left: 15%;
+    animation-delay: 2s;
+}
+
+.shape-3 {
+    width: 150px;
+    height: 150px;
+    top: 60%;
+    right: 30%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
 }
 
 .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: white;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    animation: slideInUp 0.8s ease-out;
+}
+
+.badge-icon {
+    font-size: 1.2rem;
+}
+
+.hero-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: slideInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-subtitle {
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
+    margin-bottom: 3rem;
+    opacity: 0.9;
     max-width: 600px;
-}
-
-.hero-headline {
-    font-size: var(--font-size-h1);
-    font-weight: 700;
-    margin-bottom: var(--space-md);
-    line-height: 1.2;
-}
-
-.hero-subheadline {
-    font-size: 1.25rem;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-lg);
+    margin-left: auto;
+    margin-right: auto;
+    animation: slideInUp 0.8s ease-out 0.4s both;
 }
 
 .hero-cta {
     display: flex;
-    gap: var(--space-md);
+    gap: 1.5rem;
+    justify-content: center;
     flex-wrap: wrap;
+    margin-bottom: 4rem;
+    animation: slideInUp 0.8s ease-out 0.6s both;
 }
 
-/* Features Section */
-.features {
-    padding: var(--space-xl) 0;
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+    animation: slideInUp 0.8s ease-out 0.8s both;
 }
 
-.section-header {
+.stat-item {
     text-align: center;
-    margin-bottom: var(--space-xl);
 }
 
-.section-title {
-    font-size: var(--font-size-h2);
-    font-weight: 700;
-    margin-bottom: var(--space-sm);
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.section-subtitle {
-    font-size: 1.125rem;
-    color: var(--color-text-secondary);
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    font-weight: 500;
 }
 
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
-}
-
-.feature-card {
-    text-align: center;
-    padding: var(--space-lg);
-}
-
-.feature-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto var(--space-md);
-    color: var(--color-primary);
-}
-
-.feature-title {
-    font-size: 1.25rem;
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius);
+    text-decoration: none;
     font-weight: 600;
-    margin-bottom: var(--space-sm);
-}
-
-.feature-description {
-    color: var(--color-text-secondary);
-}
-
-/* Pricing Section */
-.pricing {
-    padding: var(--space-xl) 0;
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.pricing-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-lg);
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.pricing-card {
-    background: white;
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
+    font-size: 1rem;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
     position: relative;
-    box-shadow: var(--shadow-md);
-    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
 }
 
-.pricing-card:hover {
-    transform: translateY(-4px);
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: white;
+    color: var(--primary);
     box-shadow: var(--shadow-lg);
 }
 
-.pricing-card.featured {
-    border: 2px solid var(--color-primary);
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
 }
 
-.pricing-badge {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-primary);
+.btn-secondary {
+    background: transparent;
     color: white;
-    padding: 4px 16px;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 600;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
 }
 
-.pricing-title {
-    font-size: 1.5rem;
-    margin-bottom: var(--space-md);
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
-.pricing-price {
-    display: flex;
-    align-items: baseline;
-    margin-bottom: var(--space-md);
+.btn-fullwidth {
+    width: 100%;
+    justify-content: center;
 }
 
-.currency {
-    font-size: 1.5rem;
-    color: var(--color-text-secondary);
+.btn-icon {
+    transition: transform 0.3s ease;
 }
 
-.amount {
-    font-size: 3rem;
+.btn:hover .btn-icon {
+    transform: translateX(4px);
+}
+
+/* Sections */
+.section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
     font-weight: 700;
-    margin: 0 4px;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.period {
-    color: var(--color-text-secondary);
-}
-
-.pricing-features {
-    list-style: none;
-    margin: var(--space-lg) 0;
-}
-
-.pricing-features li {
-    padding: var(--space-sm) 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.pricing-features li:before {
-    content: "✓";
-    color: var(--color-primary);
-    font-weight: bold;
-    margin-right: var(--space-sm);
-}
-
-/* Testimonials */
-.testimonials {
-    padding: var(--space-xl) 0;
-}
-
-.testimonials-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
-}
-
-.testimonial-card {
-    background: white;
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
-    box-shadow: var(--shadow-md);
-}
-
-.testimonial-text {
-    font-size: 1.125rem;
+.section-subtitle {
+    font-size: 1.2rem;
+    color: var(--medium-gray);
+    max-width: 600px;
+    margin: 0 auto;
     line-height: 1.6;
-    margin-bottom: var(--space-lg);
 }
 
-.testimonial-author {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
+/* Services Section */
+.services {
+    padding: 6rem 0;
+    background: var(--light-gray);
 }
 
-.testimonial-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.testimonial-name {
-    font-weight: 600;
-}
-
-.testimonial-role {
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-}
-
-/* CTA Section */
-.cta-section {
-    padding: var(--space-xl) 0;
-    background: var(--color-primary);
-    color: white;
+.service-card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
     text-align: center;
 }
 
-.cta-title {
-    font-size: var(--font-size-h2);
-    margin-bottom: var(--space-md);
+.service-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
 }
 
-.cta-subtitle {
-    font-size: 1.25rem;
-    margin-bottom: var(--space-lg);
-    opacity: 0.9;
+.service-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-xl);
 }
 
-.cta-section .btn-primary {
+.service-icon {
+    margin-bottom: 1.5rem;
+}
+
+.icon-bg {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto;
+}
+
+.service-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.service-description {
+    color: var(--medium-gray);
+    line-height: 1.7;
+}
+
+/* About Section */
+.about {
+    padding: 6rem 0;
     background: white;
-    color: var(--color-primary);
+}
+
+.about-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.about-text .section-header {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.about-description {
+    margin-bottom: 2.5rem;
+}
+
+.about-description p {
+    color: var(--medium-gray);
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+}
+
+.about-highlights {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.highlight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.highlight-icon {
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.highlight-text h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+}
+
+.highlight-text p {
+    color: var(--medium-gray);
+    font-size: 0.95rem;
+}
+
+.about-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.visual-placeholder {
+    width: 400px;
+    height: 300px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: var(--border-radius-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    padding: 2rem;
+}
+
+.visual-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.visual-placeholder p {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* Contact Section */
+.contact {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+}
+
+.contact-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.contact-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.contact-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 2.5rem;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.contact-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.benefit-icon {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.contact-form-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    padding: 2.5rem;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.form-input {
+    padding: 1rem 1.25rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    transition: var(--transition);
+    backdrop-filter: blur(10px);
+}
+
+.form-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-disclaimer {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    margin-top: 0.5rem;
 }
 
 /* Footer */
 .footer {
-    background: var(--color-text);
+    background: var(--dark-gray);
     color: white;
-    padding: var(--space-xl) 0 var(--space-lg);
+    padding: 3rem 0 1.5rem;
 }
 
 .footer-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-lg);
-    margin-bottom: var(--space-lg);
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 2rem;
 }
 
-.footer-title {
-    margin-bottom: var(--space-md);
+.footer-brand {
+    max-width: 400px;
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.footer-description {
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
 }
 
 .footer-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+.footer-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.footer-list {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.footer-links a {
-    color: rgba(255, 255, 255, 0.8);
+.footer-link {
+    color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
-    display: block;
-    padding: var(--space-xs) 0;
+    transition: var(--transition);
 }
 
-.footer-links a:hover {
+.footer-link:hover {
     color: white;
 }
 
-.newsletter-form {
-    display: flex;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
-}
-
-.newsletter-form input {
-    flex: 1;
-    padding: var(--space-sm);
-    border: none;
-    border-radius: var(--radius-md);
-}
-
 .footer-bottom {
-    text-align: center;
-    padding-top: var(--space-lg);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.6);
-}
-
-/* Modal */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-}
-
-.modal.active {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+.footer-copyright,
+.footer-credits {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
 }
 
-.modal-content {
-    background: white;
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
-    max-width: 500px;
-    width: 90%;
-    position: relative;
-    z-index: 1;
+/* Animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.modal-close {
-    position: absolute;
-    top: var(--space-md);
-    right: var(--space-md);
-    background: none;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-    color: var(--color-text-secondary);
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
-.modal-title {
-    font-size: var(--font-size-h3);
-    margin-bottom: var(--space-sm);
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .container {
+        padding: 0 1.5rem;
+    }
+    
+    .nav-container {
+        padding: 0 1.5rem;
+    }
+    
+    .about-content,
+    .contact-content {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+    
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .hero-stats {
+        gap: 2rem;
+    }
 }
 
-.modal-subtitle {
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-lg);
-}
-
-/* Forms */
-.form-group {
-    margin-bottom: var(--space-md);
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--color-primary);
-}
-
-.form-privacy {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    text-align: center;
-    margin-top: var(--space-md);
-}
-
-/* Utility Classes */
-.btn-lg {
-    padding: var(--space-md) var(--space-lg);
-    font-size: 1.125rem;
-}
-
-.btn-block {
-    width: 100%;
-}
-
-.icon {
-    width: 100%;
-    height: 100%;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
     .nav-menu {
         display: none;
@@ -1022,34 +1241,90 @@ body {
         display: flex;
     }
     
-    .hero-headline {
-        font-size: 2rem;
+    .hero {
+        padding: 2rem 0;
+        min-height: 80vh;
     }
     
     .hero-cta {
         flex-direction: column;
+        align-items: center;
+        gap: 1rem;
     }
     
-    .pricing-grid {
+    .hero-stats {
+        gap: 1.5rem;
+    }
+    
+    .services-grid {
         grid-template-columns: 1fr;
+        gap: 2rem;
     }
     
-    .newsletter-form {
+    .service-card {
+        padding: 2rem;
+    }
+    
+    .contact-form-container {
+        padding: 2rem;
+    }
+    
+    .footer-links {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .footer-bottom {
         flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .about-text .section-header {
+        text-align: center;
+    }
+    
+    .visual-placeholder {
+        width: 100%;
+        height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .nav-container {
+        padding: 0 1rem;
+    }
+    
+    .hero-badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .service-card {
+        padding: 1.5rem;
+    }
+    
+    .contact-form-container {
+        padding: 1.5rem;
+    }
+    
+    .footer {
+        padding: 2rem 0 1rem;
     }
 }`;
 }
 
-// Helper function to convert hex to RGB
-function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result 
-    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-    : '0, 0, 0';
-}
-
-function generateJS(domain) {
-  return `// Modern Website functionality for ${domain}
+function getDefaultJS() {
+  return `// Modern Website functionality
 
 // Utility functions
 const $ = (selector) => document.querySelector(selector);
@@ -1072,7 +1347,7 @@ const observer = new IntersectionObserver((entries) => {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Modern website loaded for ${domain}');
+    console.log('🚀 Modern AI-generated website loaded successfully!');
     
     // Initialize all features
     initNavigation();
@@ -1082,9 +1357,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initMobileMenu();
     initParallax();
     initCounters();
-    
-    // Analytics tracking
-    trackPageView();
 });
 
 // Navigation functionality
@@ -1098,7 +1370,7 @@ function initNavigation() {
             const targetElement = document.getElementById(targetId);
             
             if (targetElement) {
-                const headerHeight = $('.header').offsetHeight;
+                const headerHeight = $('.header')?.offsetHeight || 0;
                 const targetPosition = targetElement.offsetTop - headerHeight;
                 
                 window.scrollTo({
@@ -1114,34 +1386,13 @@ function initNavigation() {
             }
         });
     });
-    
-    // Active navigation highlighting
-    const sections = $$('section[id]');
-    const navLinksArray = Array.from(navLinks);
-    
-    window.addEventListener('scroll', () => {
-        const scrollPosition = window.scrollY + 100;
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.offsetHeight;
-            const sectionId = section.getAttribute('id');
-            
-            if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-                navLinksArray.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === \`#\${sectionId}\`) {
-                        link.classList.add('active');
-                    }
-                });
-            }
-        });
-    });
 }
 
 // Scroll effects for header
 function initScrollEffects() {
     const header = $('.header');
+    if (!header) return;
+    
     let lastScrollY = 0;
     
     window.addEventListener('scroll', () => {
@@ -1158,13 +1409,6 @@ function initScrollEffects() {
             header.style.boxShadow = 'none';
         }
         
-        // Header hide/show on scroll
-        if (scrollY > lastScrollY && scrollY > 100) {
-            header.style.transform = 'translateY(-100%)';
-        } else {
-            header.style.transform = 'translateY(0)';
-        }
-        
         lastScrollY = scrollY;
     });
 }
@@ -1172,7 +1416,7 @@ function initScrollEffects() {
 // Animation initialization
 function initAnimations() {
     // Fade in animations for cards and elements
-    const animatedElements = $$('.feature-card, .hero-content, .about-text, .contact-content');
+    const animatedElements = $$('.service-card, .hero-content, .about-text, .contact-content');
     
     animatedElements.forEach(element => {
         element.style.opacity = '0';
@@ -1181,22 +1425,10 @@ function initAnimations() {
         observer.observe(element);
     });
     
-    // Stagger animation for feature cards
-    const featureCards = $$('.feature-card');
-    featureCards.forEach((card, index) => {
+    // Stagger animation for service cards
+    const serviceCards = $$('.service-card');
+    serviceCards.forEach((card, index) => {
         card.style.transitionDelay = \`\${index * 0.1}s\`;
-    });
-    
-    // Button hover effects
-    const buttons = $$('.btn');
-    buttons.forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
     });
 }
 
@@ -1206,16 +1438,17 @@ function initContactForm() {
     if (!contactForm) return;
     
     const submitButton = contactForm.querySelector('button[type="submit"]');
+    if (!submitButton) return;
+    
     const originalButtonText = submitButton.innerHTML;
     
     contactForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         // Get form data
-        const formData = new FormData(this);
-        const email = this.querySelector('#email').value;
-        const name = this.querySelector('#name').value;
-        const message = this.querySelector('#message').value;
+        const email = this.querySelector('#email')?.value || '';
+        const name = this.querySelector('#name')?.value || '';
+        const message = this.querySelector('#message')?.value || '';
         
         // Validation
         if (!email || !email.includes('@')) {
@@ -1232,7 +1465,7 @@ function initContactForm() {
         submitButton.disabled = true;
         submitButton.innerHTML = '<span class="btn-text">Sending...</span>';
         
-        // Simulate API call (replace with actual submission logic)
+        // Simulate API call
         setTimeout(() => {
             showNotification(\`Thank you, \${name}! We'll be in touch soon.\`, 'success');
             contactForm.reset();
@@ -1240,60 +1473,8 @@ function initContactForm() {
             // Reset button
             submitButton.disabled = false;
             submitButton.innerHTML = originalButtonText;
-            
-            // Track conversion
-            trackEvent('form_submit', {
-                form_type: 'contact',
-                domain: '${domain}'
-            });
         }, 1500);
     });
-    
-    // Real-time validation
-    const inputs = contactForm.querySelectorAll('input, textarea');
-    inputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            validateField(this);
-        });
-        
-        input.addEventListener('input', function() {
-            if (this.classList.contains('error')) {
-                validateField(this);
-            }
-        });
-    });
-}
-
-// Field validation
-function validateField(field) {
-    const value = field.value.trim();
-    const fieldType = field.type;
-    const fieldId = field.id;
-    
-    let isValid = true;
-    let errorMessage = '';
-    
-    if (fieldType === 'email') {
-        if (!value || !value.includes('@')) {
-            isValid = false;
-            errorMessage = 'Please enter a valid email address.';
-        }
-    } else if (fieldId === 'name') {
-        if (!value) {
-            isValid = false;
-            errorMessage = 'Please enter your name.';
-        }
-    }
-    
-    if (isValid) {
-        field.classList.remove('error');
-        field.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-    } else {
-        field.classList.add('error');
-        field.style.borderColor = '#ef4444';
-    }
-    
-    return isValid;
 }
 
 // Mobile menu functionality
@@ -1418,87 +1599,19 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-// Analytics and tracking
-function trackPageView() {
-    // Google Analytics 4
-    if (typeof gtag !== 'undefined') {
-        gtag('event', 'page_view', {
-            page_title: document.title,
-            page_location: window.location.href,
-            custom_parameter: 'generated_website'
-        });
-    }
-    
-    // Custom analytics
-    console.log('📊 Page view tracked for ${domain}');
-}
-
-function trackEvent(eventName, parameters = {}) {
-    // Google Analytics 4
-    if (typeof gtag !== 'undefined') {
-        gtag('event', eventName, {
-            ...parameters,
-            domain: '${domain}',
-            timestamp: new Date().toISOString()
-        });
-    }
-    
-    console.log('📊 Event tracked:', eventName, parameters);
-}
-
-// Performance optimization
-function optimizePerformance() {
-    // Lazy load images
-    const images = $$('img[data-src]');
-    const imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.removeAttribute('data-src');
-                imageObserver.unobserve(img);
-            }
-        });
-    });
-    
-    images.forEach(img => imageObserver.observe(img));
-    
-    // Preload critical resources
-    const criticalResources = [
-        'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'
-    ];
-    
-    criticalResources.forEach(resource => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.href = resource;
-        link.as = 'style';
-        document.head.appendChild(link);
-    });
-}
-
-// Initialize performance optimizations
-optimizePerformance();
-
 // Error handling
 window.addEventListener('error', function(e) {
     console.error('JavaScript error:', e.error);
-    trackEvent('javascript_error', {
-        error_message: e.message,
-        error_filename: e.filename,
-        error_lineno: e.lineno
-    });
 });
 
 // Expose utility functions globally
 window.WebsiteUtils = {
     showNotification,
-    trackEvent,
     $,
     $$
 };
 
-console.log('✨ Modern website functionality initialized for ${domain}!');`;
+console.log('✨ Modern AI-generated website functionality initialized!');`;
 }
 
 function generateManifest(domain, strategy) {
