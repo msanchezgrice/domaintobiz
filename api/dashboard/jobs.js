@@ -23,7 +23,6 @@ export default async function handler(req, res) {
         result_data,
         error_message,
         created_at,
-        updated_at,
         started_at
       `)
       .in('status', ['queued', 'processing'])
